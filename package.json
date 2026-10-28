@@ -1,0 +1,89 @@
+{
+  "name": "gesfont",
+  "version": "2.1.0",
+  "description": "Gestão de fontes",
+  "main": "main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "release:mac": "electron-builder --mac --publish always"
+  },
+  "keywords": [],
+  "author": "Thiago Mantovani",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "fontkit": "2.0.4"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "productName": "GESFONT",
+  "build": {
+    "appId": "com.thiagomantovani.gesfont",
+    "productName": "GESFONT",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main/**",
+      "renderer/**",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "identity": null,
+      "darkModeSupport": true,
+      "extendInfo": {
+        "LSUIElement": false
+      }
+    },
+    "dmg": {
+      "title": "GESFONT"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.png",
+      "category": "Graphics"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "thiagosmantovani-hash",
+        "repo": "gesfont-releases",
+        "releaseType": "release"
+      }
+    ],
+    "afterPack": "build/adhoc-sign.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thiagosmantovani-hash/gesfont-releases.git"
+  },
+  "homepage": "https://github.com/thiagosmantovani-hash/gesfont-releases"
+}

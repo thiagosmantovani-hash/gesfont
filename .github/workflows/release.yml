@@ -1,0 +1,65 @@
+# Gera os instaladores do GESFONT num Mac do GitHub e publica a versão nas Releases.
+# Os apps instalados consultam essas Releases e se atualizam sozinhos.
+#
+# Para publicar uma versão nova:
+#   1. Aumente "version" no package.json (ex.: 2.1.0 para 2.1.1) e envie para a branch main.
+#   2. Na aba Actions do GitHub, abra "Publicar versão" e clique em "Run workflow".
+#      (Ou envie uma tag com o mesmo número: git tag v2.1.1 && git push origin v2.1.1)
+name: Publicar versão
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar-versao
+  cancel-in-progress: false
+
+jobs:
+  mac:
+    name: Mac (Apple e Intel)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Conferir versão
+        id: versao
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "versao=$V" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$V" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com a versão $V do package.json."
+            exit 1
+          fi
+          if gh release view "v$V" --json isDraft --jq '.isDraft' 2>/dev/null | grep -q false; then
+            echo "::error::A versão v$V já foi publicada. Aumente o número em package.json antes de publicar de novo."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar e publicar v${{ steps.versao.outputs.versao }}
+        run: npx electron-builder --mac --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Conferir arquivos publicados
+        run: |
+          V=${{ steps.versao.outputs.versao }}
+          gh release view "v$V" --json assets --jq '.assets[].name'
+          gh release view "v$V" --json assets --jq '.assets[].name' | grep -q '^latest-mac.yml$'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
