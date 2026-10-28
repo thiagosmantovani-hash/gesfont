@@ -23,7 +23,9 @@ concurrency:
 jobs:
   mac:
     name: Mac (Apple e Intel)
-    runs-on: macos-14
+    # Mac Intel do GitHub: fila menor que a dos Macs com chip Apple e gera os dois instaladores.
+    runs-on: macos-15-intel
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
