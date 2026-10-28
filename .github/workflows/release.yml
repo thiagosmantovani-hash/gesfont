@@ -1,15 +1,16 @@
 # Gera os instaladores do GESFONT num Mac do GitHub e publica a versão nas Releases.
 # Os apps instalados consultam essas Releases e se atualizam sozinhos.
 #
-# Para publicar uma versão nova:
-#   1. Aumente "version" no package.json (ex.: 2.1.0 para 2.1.1) e envie para a branch main.
-#   2. Na aba Actions do GitHub, abra "Publicar versão" e clique em "Run workflow".
-#      (Ou envie uma tag com o mesmo número: git tag v2.1.1 && git push origin v2.1.1)
+# Para publicar uma versão nova, aumente "version" no package.json (ex.: 2.1.0 para 2.1.1)
+# e envie para a branch main. A automação percebe o número novo e publica sozinha.
+# Também dá para rodar à mão em Actions > Publicar versão > Run workflow, ou com uma tag v2.1.1.
 name: Publicar versão
 
 on:
   workflow_dispatch:
   push:
+    branches: [main]
+    paths: ['package.json', '.github/workflows/release.yml']
     tags: ['v*']
 
 permissions:
@@ -41,22 +42,31 @@ jobs:
             exit 1
           fi
           if gh release view "v$V" --json isDraft --jq '.isDraft' 2>/dev/null | grep -q false; then
+            if [ "$GITHUB_REF_TYPE" = "branch" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
+              echo "A versão v$V já está publicada. Nada a fazer: aumente o número em package.json para publicar."
+              echo "publicar=nao" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             echo "::error::A versão v$V já foi publicada. Aumente o número em package.json antes de publicar de novo."
             exit 1
           fi
+          echo "publicar=sim" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Instalar dependências
+        if: steps.versao.outputs.publicar == 'sim'
         run: npm ci
 
       - name: Gerar e publicar v${{ steps.versao.outputs.versao }}
+        if: steps.versao.outputs.publicar == 'sim'
         run: npx electron-builder --mac --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       - name: Conferir arquivos publicados
+        if: steps.versao.outputs.publicar == 'sim'
         run: |
           V=${{ steps.versao.outputs.versao }}
           gh release view "v$V" --json assets --jq '.assets[].name'

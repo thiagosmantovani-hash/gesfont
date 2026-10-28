@@ -71,9 +71,10 @@ O motor de atualização é o `electron-updater`, o equivalente ao Sparkle para 
 A automação `.github/workflows/release.yml` gera os instaladores num Mac do GitHub (chip Apple e Intel) e publica a Release com o arquivo `latest-mac.yml`, que é o que os apps instalados consultam.
 
 1. Faça as mudanças no código e aumente `"version"` no `package.json` (por exemplo, de 2.1.0 para 2.1.1). Os apps só atualizam para um número maior que o instalado.
-2. Envie para a branch `main`.
-3. No GitHub, abra a aba **Actions**, escolha **Publicar versão** e clique em **Run workflow**. Também funciona enviar uma tag com o mesmo número: `git tag v2.1.1 && git push origin v2.1.1`.
-4. Em uns 10 minutos a versão aparece em Releases. Os Macs com o GESFONT recebem a atualização na próxima consulta.
+2. Envie para a branch `main`. A automação percebe o número novo e começa sozinha. Se o número não mudou, ela não publica nada.
+3. Em uns 10 minutos a versão aparece em Releases. Os Macs com o GESFONT recebem a atualização na próxima consulta, em até seis horas, ou na hora com **Verificar atualizações…**.
+
+Para acompanhar ou rodar de novo à mão: aba **Actions** > **Publicar versão** > **Run workflow**.
 
 ### Se um dia tiver o certificado da Apple
 

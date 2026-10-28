@@ -1,7 +1,7 @@
 {
   "name": "gesfont",
   "version": "2.1.0",
-  "description": "Gestão de fontes",
+  "description": "GESFONT, gestão de fontes para Mac",
   "main": "main/main.js",
   "scripts": {
     "start": "electron .",
