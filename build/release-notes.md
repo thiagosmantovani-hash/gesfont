@@ -1,0 +1,2 @@
+- Quando sai uma versão nova, o GESFONT avisa e pergunta se você quer baixar e instalar.
+- Combinar: novos formatos de teste em tamanho real: horizontal 1920×1080, vertical 1080×1920, retrato 1080×1440 e quadrado 1080×1080.

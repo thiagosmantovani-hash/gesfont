@@ -1,6 +1,6 @@
 {
   "name": "gesfont",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "GESFONT, gestão de fontes para Mac",
   "main": "main/main.js",
   "scripts": {

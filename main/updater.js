@@ -6,7 +6,7 @@
 // - "swap": usado no Mac sem assinatura, onde o macOS não deixa o Squirrel trocar o app.
 //   O GESFONT baixa o .zip da versão nova, confere o SHA-512 publicado no latest-mac.yml,
 //   extrai, e ao reiniciar um script troca o GESFONT.app em Aplicativos e abre a versão nova.
-const { app, shell, net } = require('electron');
+const { app, shell, net, dialog, Notification, BrowserWindow } = require('electron');
 const { execFile, spawn } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -26,6 +26,10 @@ let state = { phase: 'idle', version: null, percent: 0, message: null, manualUrl
 let manualCheck = false;
 let pending = null;      // { version, appPath } pronto para trocar (modo swap)
 let downloading = null;  // versão sendo baixada (modo swap)
+let wantInstall = false; // o usuário aceitou baixar e instalar a versão encontrada
+let asking = false;      // o aviso de nova versão está aberto
+let dismissed = null;    // versão que o usuário adiou nesta sessão
+let lastInfo = null;
 
 function set(patch) {
   state = { ...state, ...patch };
@@ -63,7 +67,8 @@ async function init(context) {
   try { ({ autoUpdater } = require('electron-updater')); } catch { state.phase = 'unavailable'; return; }
   mode = await detectMode();
 
-  autoUpdater.autoDownload = mode === 'squirrel' && ctx.settings().autoUpdate !== false;
+  // nada é baixado sem o usuário aceitar: o app avisa e pergunta primeiro
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = mode === 'squirrel';
   autoUpdater.logger = null;
   if (process.env.GESFONT_UPDATE_FEED) autoUpdater.setFeedURL({ provider: 'generic', url: process.env.GESFONT_UPDATE_FEED });
@@ -72,16 +77,18 @@ async function init(context) {
   autoUpdater.on('checking-for-update', () => { if (!downloading && !pending) set({ phase: 'checking', message: null }); });
   autoUpdater.on('update-not-available', () => { if (!pending) set({ phase: 'latest' }); manualCheck = false; });
   autoUpdater.on('update-available', (info) => {
-    if (mode === 'swap') {
-      if (pending && pending.version === info.version) { set({ phase: 'ready', version: info.version }); return; }
-      if (ctx.settings().autoUpdate !== false || manualCheck) swapDownload(info);
-      else set({ phase: 'available', version: info.version });
-      return;
-    }
-    set({ phase: autoUpdater.autoDownload ? 'downloading' : 'available', version: info.version, percent: 0 });
+    lastInfo = info;
+    if (pending && pending.version === info.version) { set({ phase: 'ready', version: info.version }); return; }
+    if (downloading === info.version || (state.phase === 'downloading' && state.version === info.version)) return;
+    set({ phase: 'available', version: info.version, percent: 0, notes: notesOf(info) });
+    if (manualCheck || dismissed !== info.version) ask(info);
   });
   autoUpdater.on('download-progress', (p) => set({ phase: 'downloading', percent: Math.round(p.percent || 0) }));
-  autoUpdater.on('update-downloaded', (info) => { set({ phase: 'ready', version: info.version, percent: 100 }); manualCheck = false; });
+  autoUpdater.on('update-downloaded', (info) => {
+    set({ phase: 'ready', version: info.version, percent: 100 });
+    manualCheck = false;
+    if (wantInstall) install();
+  });
   autoUpdater.on('error', (err) => {
     const msg = String((err && err.message) || err);
     if (/code signature|not signed|ShipIt|did not pass validation/i.test(msg) && state.version) {
@@ -98,6 +105,55 @@ async function init(context) {
   setInterval(() => check(false), SIX_HOURS);
 }
 
+// ---------- aviso de nova versão ----------
+function notesOf(info) {
+  const raw = Array.isArray(info.releaseNotes) ? info.releaseNotes.map((n) => n.note).join('\n') : (info.releaseNotes || '');
+  return String(raw).replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 700);
+}
+
+function mainWindow() {
+  return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) || null;
+}
+
+// Pergunta se o usuário quer baixar e instalar agora. Com a janela escondida, avisa por notificação.
+async function ask(info) {
+  if (asking) return;
+  const win = mainWindow();
+  if (!win || !win.isVisible()) {
+    if (Notification.isSupported()) {
+      const n = new Notification({ title: `GESFONT ${info.version} disponível`, body: 'Clique para ver as novidades e atualizar.', silent: false });
+      n.on('click', () => { if (ctx.showWindow) ctx.showWindow(); setTimeout(() => ask(info), 300); });
+      n.show();
+    }
+    return;
+  }
+  asking = true;
+  const notes = notesOf(info);
+  try {
+    const { response } = await dialog.showMessageBox(win, {
+      type: 'info',
+      buttons: ['Baixar e instalar', 'Agora não'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+      message: `O GESFONT ${info.version} está disponível`,
+      detail: `Você está usando a versão ${app.getVersion()}.${notes ? `\n\nNovidades:\n${notes}` : ''}\n\nO GESFONT baixa a versão nova, fecha e abre de novo já atualizado. Leva cerca de um minuto. Suas fontes, coleções e ajustes continuam iguais.`,
+    });
+    if (response === 0) accept();
+    else { dismissed = info.version; set({ phase: 'available', version: info.version }); }
+  } finally { asking = false; manualCheck = false; }
+}
+
+// O usuário aceitou: baixa e, ao terminar, instala e reabre.
+function accept() {
+  wantInstall = true;
+  dismissed = null;
+  if (state.phase === 'ready') { install(); return; }
+  if (mode === 'swap') { if (lastInfo) swapDownload(lastInfo); return; }
+  set({ phase: 'downloading', percent: 0 });
+  autoUpdater.downloadUpdate().catch(() => {});
+}
+
 async function check(isManual) {
   if (!autoUpdater) {
     if (isManual && ctx) ctx.send('update:status', { ...state, manual: true });
@@ -106,7 +162,7 @@ async function check(isManual) {
   if (!isManual && ctx.settings().autoUpdate === false) return status();
   if (downloading) return status();
   manualCheck = isManual;
-  if (mode === 'squirrel') autoUpdater.autoDownload = ctx.settings().autoUpdate !== false || isManual;
+  if (isManual && state.phase === 'available' && lastInfo) { ask(lastInfo); return status(); }
   try { await autoUpdater.checkForUpdates(); } catch {}
   return status();
 }
@@ -174,6 +230,7 @@ async function swapDownload(info) {
     await fsp.rm(zip, { force: true });
     pending = { version: info.version, appPath };
     set({ phase: 'ready', version: info.version, percent: 100 });
+    if (wantInstall) setTimeout(() => install(), 600);
   } catch (e) {
     manual(`Não foi possível baixar a atualização (${e.message}). Baixe pela página de downloads.`);
   } finally {
@@ -218,12 +275,11 @@ rm -f "$0"
 
 function install() {
   if (state.phase === 'manual') { shell.openExternal(state.manualUrl || RELEASES_URL); return; }
+  if (state.phase === 'available') { accept(); return; }
   if (mode === 'swap') {
     if (state.phase === 'ready' && pending) swapInstall();
-    else if (state.phase === 'available') check(true);
     return;
   }
-  if (state.phase === 'available' && autoUpdater) { autoUpdater.downloadUpdate().catch(() => {}); return; }
   if (state.phase === 'ready' && autoUpdater) {
     if (ctx.beforeInstall) ctx.beforeInstall();
     setImmediate(() => autoUpdater.quitAndInstall(false, true));

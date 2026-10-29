@@ -38,10 +38,23 @@ function defaults() {
 
 const BASE = { hs: 64, ss: 24, bs: 18, lh: 1.55, subCase: 'normal', layout: 'page', colors: paletteObj(PALETTES[0]) };
 
+// Formatos de teste. As artes de 1080 px usam o dobro dos tamanhos da página, como uma tela de celular em 2x.
+const FORMATS = [
+  { id: 'page', label: 'Página', w: null, h: null },
+  { id: 'land', label: 'Horizontal', w: 1920, h: 1080 },
+  { id: 'story', label: 'Vertical', w: 1080, h: 1920 },
+  { id: 'portrait', label: 'Retrato', w: 1080, h: 1440 },
+  { id: 'square', label: 'Quadrado', w: 1080, h: 1080 },
+];
+const ART_SCALE = 2;
+const fmtOf = (id) => FORMATS.find((f) => f.id === id) || FORMATS[0];
+
 export function mountPairs(root) {
   let cfg = (() => { try { return JSON.parse(localStorage.getItem('gf.pair')); } catch { return null; } })() || {};
   cfg = { ...BASE, ...defaults(), ...cfg };
   if (!cfg.sub) cfg.sub = cfg.body ? { ...cfg.body } : null;
+  if (cfg.layout === 'post') cfg.layout = 'square';
+  if (!FORMATS.some((f) => f.id === cfg.layout)) cfg.layout = 'page';
   if (cfg.dark !== undefined && !cfg.colorsSet) { cfg.colors = paletteObj(cfg.dark ? PALETTES[1] : PALETTES[0]); delete cfg.dark; }
   cfg.colors = { ...paletteObj(PALETTES[0]), ...cfg.colors };
   const persist = () => saveLocal('pair', cfg);
@@ -73,17 +86,25 @@ export function mountPairs(root) {
     cta: ed('span', 'pair-cta', 'Ver a coleção'),
   };
   const pageCard = h('article', { class: 'pair-card' }, page.title, page.sub, page.p1, page.p2, page.cta);
-  const postCard = h('article', { class: 'pair-card pair-post' }, h('div', { class: 'post-band' }, post.tag), post.title, post.sub, post.body, post.cta);
+  // arte em tamanho real (1080 px de largura ou mais), reduzida para caber na tela
+  const postCard = h('article', { class: 'artboard' }, h('div', { class: 'post-band' }, post.tag), post.title, post.sub, post.body, post.cta);
+  const artWrap = h('div', { class: 'art-wrap' }, postCard);
+  const artCaption = h('p', { class: 'art-caption' });
+  const artBox = h('div', { class: 'art-box' }, artWrap, artCaption);
   const contrastEl = h('div', { class: 'contrast' });
-  stage.append(pageCard, postCard, contrastEl);
+  stage.append(pageCard, artBox, contrastEl);
+  const ro = new ResizeObserver(() => fitArt());
+  ro.observe(stage);
 
   function famOf(slot) { return slot && resolveFamily(slot.key); }
 
   function paint() {
     const hf = famOf(cfg.heading), sf = famOf(cfg.sub), bf = famOf(cfg.body);
     const c = cfg.colors;
-    pageCard.hidden = cfg.layout !== 'page';
-    postCard.hidden = cfg.layout !== 'post';
+    const fmt = fmtOf(cfg.layout);
+    pageCard.hidden = fmt.id !== 'page';
+    artBox.hidden = fmt.id === 'page';
+    postCard.className = `artboard art-${fmt.id}`;
     for (const card of [pageCard, postCard]) {
       card.style.setProperty('--c-bg', c.bg);
       card.style.setProperty('--c-title', c.title);
@@ -96,14 +117,21 @@ export function mountPairs(root) {
     if (sf) [page.sub, post.sub, post.tag].forEach((e) => paintChoice(e, sf, cfg.sub.choice));
     if (bf) [page.p1, page.p2, page.cta, post.body, post.cta].forEach((e) => paintChoice(e, bf, cfg.body.choice));
     page.title.style.fontSize = cfg.hs + 'px';
-    post.title.style.fontSize = Math.round(cfg.hs * 0.85) + 'px';
+    const k = ART_SCALE;
+    post.title.style.fontSize = Math.round(cfg.hs * k) + 'px';
+    post.sub.style.fontSize = Math.round(cfg.ss * k) + 'px';
+    post.tag.style.fontSize = Math.round(Math.max(14, cfg.ss * 0.8) * k) + 'px';
+    post.body.style.fontSize = Math.round(cfg.bs * k) + 'px';
+    post.body.style.lineHeight = cfg.lh;
+    post.cta.style.fontSize = Math.round(cfg.bs * k) + 'px';
+    page.sub.style.fontSize = cfg.ss + 'px';
     [page.sub, post.sub].forEach((e) => {
-      e.style.fontSize = cfg.ss + 'px';
       e.style.textTransform = cfg.subCase === 'upper' ? 'uppercase' : 'none';
       e.style.letterSpacing = cfg.subCase === 'upper' ? '0.08em' : 'normal';
     });
-    [page.p1, page.p2, post.body].forEach((e) => { e.style.fontSize = cfg.bs + 'px'; e.style.lineHeight = cfg.lh; });
-    [page.cta, post.cta].forEach((e) => { e.style.fontSize = cfg.bs + 'px'; });
+    [page.p1, page.p2].forEach((e) => { e.style.fontSize = cfg.bs + 'px'; e.style.lineHeight = cfg.lh; });
+    page.cta.style.fontSize = cfg.bs + 'px';
+    fitArt();
 
     // contraste das cores do texto sobre o fundo (referência WCAG: 4,5 para texto, 3 para títulos grandes)
     const rows = [['Título', c.title, 3], ['Subtítulo', c.sub, 3], ['Texto', c.body, 4.5], ['Destaque', c.accentText, 4.5, c.accent]];
@@ -116,6 +144,35 @@ export function mountPairs(root) {
           h('span', { class: 'contrast-dot', style: { background: fg, boxShadow: `0 0 0 3px ${bg || c.bg}` } }),
           `${label} ${r.toFixed(1).replace('.', ',')}:1`, ok ? null : h('strong', {}, ' baixo'));
       }));
+  }
+
+  // Reduz a arte para caber no espaço disponível e mostra o tamanho real.
+  function fitArt() {
+    const fmt = fmtOf(cfg.layout);
+    if (!fmt.w) return;
+    const availW = Math.max(240, Math.min(stage.clientWidth || 760, fmt.w > fmt.h ? 980 : 760));
+    const availH = Math.max(380, window.innerHeight - 250);
+    const s = Math.min(availW / fmt.w, availH / fmt.h);
+    postCard.style.width = fmt.w + 'px';
+    postCard.style.height = fmt.h + 'px';
+    postCard.style.transform = `scale(${s})`;
+    artWrap.style.width = Math.round(fmt.w * s) + 'px';
+    artWrap.style.height = Math.round(fmt.h * s) + 'px';
+    const k = ART_SCALE;
+    artCaption.textContent = `${fmt.w} × ${fmt.h} px, prévia em ${Math.round(s * 100)}%. Na arte: título ${Math.round(cfg.hs * k)} px, subtítulo ${Math.round(cfg.ss * k)} px, texto ${Math.round(cfg.bs * k)} px.`;
+  }
+
+  // Botões de formato com a proporção desenhada.
+  function formatPicker() {
+    return h('div', { class: 'ctl' }, h('span', { class: 'ctl-label' }, 'Formato'),
+      h('div', { class: 'formats' }, FORMATS.map((f) => {
+        const r = f.w ? f.w / f.h : 1.35;
+        const box = r >= 1 ? { width: '30px', height: Math.round(30 / r) + 'px' } : { height: '30px', width: Math.round(30 * r) + 'px' };
+        return h('button', { class: 'format' + (cfg.layout === f.id ? ' is-on' : ''), 'aria-pressed': cfg.layout === f.id ? 'true' : 'false', onClick: () => { cfg.layout = f.id; persist(); drawControls(); paint(); } },
+          h('span', { class: 'format-shape' }, h('i', { style: box })),
+          h('span', { class: 'format-name' }, f.label),
+          h('span', { class: 'format-size' }, f.w ? `${f.w}×${f.h}` : 'Livre'));
+      })));
   }
 
   function fontSlot(role, label) {
@@ -178,7 +235,7 @@ export function mountPairs(root) {
       h('h3', { class: 'ctl-group' }, 'Cores'),
       colorControls(),
       h('h3', { class: 'ctl-group' }, 'Layout de teste'),
-      seg('Formato', 'layout', [['page', 'Página'], ['post', 'Post quadrado']]),
+      formatPicker(),
       h('button', { class: 'btn btn-primary', onClick: savePair }, 'Salvar combinação'));
   }
 
@@ -189,6 +246,7 @@ export function mountPairs(root) {
       `Título: ${name(cfg.heading)}, ${cfg.hs} px`,
       `Subtítulo: ${name(cfg.sub)}, ${cfg.ss} px${cfg.subCase === 'upper' ? ', em maiúsculas' : ''}`,
       `Texto: ${name(cfg.body)}, ${px(cfg.bs)}, entrelinha ${cfg.lh.toFixed(2).replace('.', ',')}`,
+      ...(fmtOf(cfg.layout).w ? ['', `Arte ${fmtOf(cfg.layout).w} × ${fmtOf(cfg.layout).h} px: título ${Math.round(cfg.hs * ART_SCALE)} px, subtítulo ${Math.round(cfg.ss * ART_SCALE)} px, texto ${Math.round(cfg.bs * ART_SCALE)} px`] : []),
       '',
       `Fundo ${c.bg.toUpperCase()}`, `Título ${c.title.toUpperCase()}`, `Subtítulo ${c.sub.toUpperCase()}`, `Texto ${c.body.toUpperCase()}`,
       `Destaque ${c.accent.toUpperCase()} com texto ${c.accentText.toUpperCase()}`,
@@ -201,7 +259,7 @@ export function mountPairs(root) {
     const same = (a, b) => (a && b ? a.key === b.key && a.choice === b.choice : a === b);
     const exists = S.pairs.some((p) => same(p.heading, cfg.heading) && same(p.sub, cfg.sub) && same(p.body, cfg.body) && JSON.stringify(p.colors || {}) === JSON.stringify(cfg.colors));
     if (exists) { toast('Essa combinação já está salva'); return; }
-    S.pairs.unshift({ id: 'p' + Date.now().toString(36), heading: { ...cfg.heading }, sub: cfg.sub ? { ...cfg.sub } : null, body: { ...cfg.body }, hs: cfg.hs, ss: cfg.ss, bs: cfg.bs, lh: cfg.lh, subCase: cfg.subCase, colors: { ...cfg.colors }, at: Date.now() });
+    S.pairs.unshift({ id: 'p' + Date.now().toString(36), heading: { ...cfg.heading }, sub: cfg.sub ? { ...cfg.sub } : null, body: { ...cfg.body }, hs: cfg.hs, ss: cfg.ss, bs: cfg.bs, lh: cfg.lh, subCase: cfg.subCase, colors: { ...cfg.colors }, layout: cfg.layout, at: Date.now() });
     api.save('pairs', S.pairs);
     toast('Combinação salva');
     drawSaved();
@@ -223,7 +281,7 @@ export function mountPairs(root) {
       if (bf) paintChoice(b, bf, p.body.choice);
       grid.append(h('div', { class: 'pair-thumb' },
         h('button', { class: 'pair-thumb-main', style: { background: c.bg }, title: 'Abrir combinação', onClick: () => {
-          cfg = { ...cfg, heading: { ...p.heading }, sub: { ...(p.sub || p.body) }, body: { ...p.body }, hs: p.hs || cfg.hs, ss: p.ss || cfg.ss, bs: p.bs || cfg.bs, lh: p.lh || cfg.lh, subCase: p.subCase || 'normal', colors: { ...c }, colorsSet: true };
+          cfg = { ...cfg, heading: { ...p.heading }, sub: { ...(p.sub || p.body) }, body: { ...p.body }, hs: p.hs || cfg.hs, ss: p.ss || cfg.ss, bs: p.bs || cfg.bs, lh: p.lh || cfg.lh, subCase: p.subCase || 'normal', colors: { ...c }, colorsSet: true, layout: p.layout || cfg.layout };
           persist(); drawControls(); paint();
         } }, t, s, b, h('i', { class: 'pair-thumb-accent', style: { background: c.accent } })),
         h('button', { class: 'icon-btn pair-del', title: 'Excluir combinação', 'aria-label': 'Excluir combinação', onClick: () => confirmBox('Excluir combinação?', `${hf ? hf.name : ''} com ${bf ? bf.name : ''}`, 'Excluir', () => { S.pairs = S.pairs.filter((x) => x !== p); api.save('pairs', S.pairs); drawSaved(); }) }, icon('x'))));
@@ -232,7 +290,7 @@ export function mountPairs(root) {
   }
 
   drawControls(); paint(); drawSaved();
-  return { update: (reason) => { if (reason === 'data' || reason === 'google') { drawControls(); paint(); drawSaved(); } }, destroy() {} };
+  return { update: (reason) => { if (reason === 'data' || reason === 'google') { drawControls(); paint(); drawSaved(); } }, destroy() { ro.disconnect(); } };
 }
 
 export { famKey, navigate };

@@ -119,8 +119,8 @@ function drawSidebar() {
 function updateBanner() {
   const u = S.update || {};
   if (u.phase === 'ready') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} pronta`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, 'Reiniciar e atualizar'));
-  if (u.phase === 'manual' || u.phase === 'available') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} disponível`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, u.phase === 'manual' ? 'Baixar' : 'Atualizar'));
-  if (u.phase === 'downloading') return h('div', { class: 'update-bar is-quiet' }, h('span', {}, `Baixando a versão ${u.version || 'nova'}: ${u.percent || 0}%`));
+  if (u.phase === 'manual' || u.phase === 'available') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} disponível`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, u.phase === 'manual' ? 'Baixar' : 'Baixar e instalar'));
+  if (u.phase === 'downloading') return h('div', { class: 'update-bar is-quiet' }, h('span', {}, `Baixando a versão ${u.version || 'nova'}: ${u.percent || 0}%`), h('span', { class: 'update-progress' }, h('i', { style: { width: (u.percent || 0) + '%' } })), h('span', { class: 'small' }, 'O app reinicia sozinho ao terminar.'));
   return ''; // nada a mostrar (string vazia: append do DOM escreveria "null")
 }
 

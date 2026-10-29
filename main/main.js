@@ -567,7 +567,7 @@ function registerIpc() {
   ipcMain.handle('data:save', (_e, key, value) => {
     if (!['collections', 'favorites', 'pairs', 'settings', 'overrides', 'tags'].includes(key)) return;
     const prev = store.data.settings;
-    if (key === 'settings') value = { ...value, rootDir: prev.rootDir, systemScanned: prev.systemScanned };
+    if (key === 'settings') value = { ...value, rootDir: prev.rootDir, systemScanned: prev.systemScanned, updatePrefVersion: prev.updatePrefVersion };
     store.data[key] = value;
     if (key === 'settings') {
       nativeTheme.themeSource = value.theme || 'system';
@@ -707,6 +707,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     store = new Store(dataDir());
     if (!store.data.settings.rootDir) store.data.settings.rootDir = defaultRoot();
+    if (store.data.settings.updatePrefVersion !== 1) { store.data.settings.autoUpdate = true; store.data.settings.updatePrefVersion = 1; store.save(); }
     nativeTheme.themeSource = store.data.settings.theme || 'system';
     if (activator.reconcile(store)) store.save();
     await ensureRoot();
@@ -716,7 +717,7 @@ if (!app.requestSingleInstanceLock()) {
     syncTray();
     createWindow(!hidden);
     if (hidden && isMac && app.dock) app.dock.hide();
-    updater.init({ send, settings: () => store.data.settings, beforeInstall: () => { quitting = true; try { store.flush(); } catch {} } });
+    updater.init({ send, showWindow, settings: () => store.data.settings, beforeInstall: () => { quitting = true; try { store.flush(); } catch {} } });
     // mantém a pasta principal e as pastas do usuário sincronizadas em segundo plano
     setTimeout(async () => {
       await scanFolder(rootDir());

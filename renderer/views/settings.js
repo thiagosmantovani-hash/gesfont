@@ -65,8 +65,8 @@ export function mountSettings(root) {
         sw('hideAutoTags', 'Ocultar tags automáticas', null, () => emit('tags')),
         sw('hideGoogleTags', 'Ocultar tags do Google Fonts', null, () => emit('tags'))),
 
-      section('Atualizações', `Versão instalada: ${S.appVersion}. O GESFONT procura versões novas ao abrir e a cada seis horas, baixa em segundo plano e instala quando você reinicia o app.`,
-        sw('autoUpdate', 'Atualizar automaticamente'),
+      section('Atualizações', `Versão instalada: ${S.appVersion}.`,
+        sw('autoUpdate', 'Procurar atualizações automaticamente', 'O GESFONT procura versões novas ao abrir e a cada seis horas. Quando encontra, avisa e pergunta se você quer baixar e instalar. Nada é baixado sem você aceitar.'),
         row('Procurar versão nova agora', h('button', { class: 'btn', onClick: () => api.checkUpdate() }, 'Verificar agora'), updateText())),
 
       section('Ativação', null,
@@ -81,7 +81,7 @@ export function mountSettings(root) {
     return {
       dev: 'Disponível só no app instalado.', checking: 'Procurando…', latest: 'Você está na versão mais recente.',
       downloading: `Baixando a versão ${u.version}: ${u.percent || 0}%`, ready: `Versão ${u.version} pronta. Reinicie para instalar.`,
-      available: `Versão ${u.version} disponível.`, manual: `Versão ${u.version} disponível para baixar.`,
+      available: `Versão ${u.version} disponível. Clique em Verificar agora para instalar.`, manual: `Versão ${u.version} disponível para baixar.`,
       offline: 'Não foi possível consultar agora.', error: u.message || 'Erro ao verificar.',
     }[u.phase] || 'Ainda não verificado.';
   }

@@ -613,3 +613,39 @@ button.dup-name:hover { text-decoration: underline; text-underline-offset: 3px; 
 .fail-list { margin: 0; padding-left: 18px; font-size: 12px; color: var(--ink-2); display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
 
 .pair-controls > * { flex-shrink: 0; }
+
+.update-progress { display: block; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.update-progress i { display: block; height: 100%; background: var(--neon-edge); transition: width .3s; }
+
+/* ---------- v2.3: formatos de arte no Combinar ---------- */
+.art-box { display: flex; flex-direction: column; gap: 10px; }
+.art-wrap { position: relative; overflow: hidden; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06); }
+.art-caption { margin: 0; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.artboard {
+  position: absolute; top: 0; left: 0; transform-origin: 0 0;
+  display: flex; flex-direction: column; padding: 0 96px 96px; overflow: hidden;
+  background: var(--c-bg, #fff); color: var(--c-body, #000);
+}
+.artboard > * { flex-shrink: 0; }
+.artboard [contenteditable] { outline: none; }
+.artboard .post-band { flex: 0 0 24%; margin: 0 -96px auto; padding: 72px 96px; background: var(--c-accent); }
+.artboard .post-tag { color: var(--c-accent-text); }
+.artboard .post-title { margin: 0 0 .25em; line-height: 1.02; font-weight: normal; color: var(--c-title); }
+.artboard .post-sub { margin: 0 0 .7em; line-height: 1.2; color: var(--c-sub); }
+.artboard .post-body { margin: 0 0 1.2em; color: var(--c-body); max-width: 24em; }
+.artboard .pair-cta { align-self: flex-start; margin-top: 0; }
+.art-story .post-band { flex-basis: 18%; }
+.art-portrait .post-band { flex-basis: 22%; }
+.art-square .post-band { flex-basis: 26%; }
+/* horizontal: faixa de destaque na lateral e conteúdo à direita */
+.art-land { padding: 96px 110px 110px 790px; justify-content: flex-end; }
+.art-land .post-band { position: absolute; top: 0; bottom: 0; left: 0; width: 690px; margin: 0; padding: 88px 80px; }
+
+.formats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.format { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
+.format:hover { border-color: var(--ink-3); }
+.format.is-on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.format-shape { height: 32px; display: grid; place-items: center; }
+.format-shape i { display: block; border: 1.5px solid var(--ink); border-radius: 2px; }
+.format-name { font-size: 12px; font-weight: 600; }
+.format-size { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
