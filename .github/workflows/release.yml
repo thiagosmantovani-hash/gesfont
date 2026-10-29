@@ -67,6 +67,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
+      - name: Publicar as novidades na página da versão
+        if: steps.versao.outputs.publicar == 'sim' && hashFiles('build/release-notes.md') != ''
+        run: gh release edit "v${{ steps.versao.outputs.versao }}" --notes-file build/release-notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Conferir arquivos publicados
         if: steps.versao.outputs.publicar == 'sim'
         run: |
