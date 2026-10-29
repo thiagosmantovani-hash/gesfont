@@ -11,6 +11,7 @@ const activator = require('./activator');
 const google = require('./google');
 const { extractFromCollection } = require('./ttc');
 const updater = require('./updater');
+const system = require('./system');
 
 const isMac = process.platform === 'darwin';
 let win = null;
@@ -58,6 +59,8 @@ function publicState() {
     pairs: d.pairs,
     overrides: d.overrides,
     tags: d.tags,
+    systemKept: d.systemKept || {},
+    systemLocations: system.locations().map(({ dir, kind, label }) => ({ dir, kind, label })),
     settings: d.settings,
     platform: process.platform,
     targetDir: activator.targetDir(),
@@ -209,19 +212,69 @@ async function setRoot(newRoot) {
   changed();
 }
 
-async function scanSystem() {
-  const ours = new Set(Object.values(store.data.activated).map((a) => a.dest));
-  const files = [];
-  for (const dir of activator.systemFontDirs()) {
-    if (fs.existsSync(dir)) files.push(...(await scanner.walk(dir)));
+// Varre todas as pastas de fontes do sistema. Arquivos já conhecidos e sem mudança não são relidos.
+let systemScanning = null;
+function scanSystem() {
+  if (systemScanning) return systemScanning;
+  systemScanning = (async () => {
+    const ours = new Set(Object.values(store.data.activated).map((a) => a.dest));
+    const files = [];
+    for (const { dir } of system.locations()) {
+      if (fs.existsSync(dir)) files.push(...(await scanner.walk(dir)));
+    }
+    const unique = Array.from(new Set(files)).filter((f) => !ours.has(f) && !f.includes(`${path.sep}gesfont${path.sep}`));
+    const set = new Set(unique);
+    scanner.removeFiles(store, (f, info) => info.source === 'system' && !set.has(f));
+    send('scan:progress', { folder: 'Sistema', done: 0, total: unique.length });
+    await scanner.scanFiles(store, unique, 'system', (done, total) => send('scan:progress', { folder: 'Sistema', done, total }));
+    // classifica cada face: nativa ou instalada
+    for (const f of unique) {
+      const info = store.data.fileIndex[f];
+      if (!info) continue;
+      for (const id of info.ids) { const face = store.data.faces[id]; if (face) Object.assign(face, system.classify(face)); }
+    }
+    for (const p of Object.keys(store.data.systemKept || {})) if (!set.has(p)) delete store.data.systemKept[p];
+    send('scan:progress', { folder: 'Sistema', done: unique.length, total: unique.length, finished: true });
+    store.data.settings.systemScanned = true;
+    changed();
+  })().finally(() => { systemScanning = null; });
+  return systemScanning;
+}
+
+// Avisa quando alguém instala ou remove fontes no sistema por fora do GESFONT.
+function watchSystem() {
+  let t = null;
+  for (const dir of system.installedDirs()) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      const w = fs.watch(dir, (_e, name) => {
+        if (name && !scanner.isFontFile(name)) return;
+        clearTimeout(t);
+        t = setTimeout(() => scanSystem(), 2000);
+      });
+      w.on('error', () => {});
+    } catch {}
   }
-  const unique = Array.from(new Set(files)).filter((f) => !ours.has(f) && !f.includes(`${path.sep}gesfont${path.sep}`));
-  scanner.removeFiles(store, (_f, info) => info.source === 'system');
-  send('scan:progress', { folder: 'Sistema', done: 0, total: unique.length });
-  await scanner.scanFiles(store, unique, 'system', (done, total) => send('scan:progress', { folder: 'Sistema', done, total }));
-  send('scan:progress', { folder: 'Sistema', done: unique.length, total: unique.length, finished: true });
-  store.data.settings.systemScanned = true;
+}
+
+// Aplica as decisões da verificação: manter, mover para a GESFONT (ativa ou não) ou apagar.
+async function resolveSystem(items) {
+  const d = store.data;
+  d.systemKept = d.systemKept || {};
+  const dest = path.join(rootDir(), 'Importadas do sistema');
+  const r = await system.resolve(items, dest, (p) => shell.trashItem(p));
+  for (const p of r.kept) d.systemKept[p] = Date.now();
+  const gone = new Set([...r.trashed, ...r.moved.map((m) => m.from)]);
+  for (const p of gone) delete d.systemKept[p];
+  scanner.removeFiles(store, (f) => gone.has(f));
+  if (r.moved.length) {
+    await scanner.scanFiles(store, r.moved.map((m) => m.to), sourceFor);
+    const ids = r.moved.filter((m) => m.activate).flatMap((m) => (d.fileIndex[m.to] ? d.fileIndex[m.to].ids : []));
+    if (ids.length) await setActive(ids, true);
+  }
   changed();
+  updateTray();
+  return { moved: r.moved.length, activated: r.moved.filter((m) => m.activate).length, trashed: r.trashed.length, kept: r.kept.length, failed: r.failed };
 }
 
 // ---------- ativação ----------
@@ -464,6 +517,8 @@ function registerIpc() {
   ipcMain.handle('update:install', () => updater.install());
   ipcMain.handle('files:trash', (_e, paths) => trashFiles(paths));
   ipcMain.handle('system:scan', () => scanSystem());
+  ipcMain.handle('system:resolve', (_e, items) => resolveSystem(items));
+  ipcMain.handle('system:unkeep', (_e, paths) => { for (const p of paths) delete store.data.systemKept[p]; changed(); });
 
   ipcMain.handle('font:data', async (_e, id) => {
     const f = store.data.faces[id];
@@ -584,7 +639,8 @@ function buildMenu() {
       label: 'Visualizar',
       submenu: [
         { label: 'Biblioteca', accelerator: 'CmdOrCtrl+1', click: go('library') },
-        { label: 'Sistema', accelerator: 'CmdOrCtrl+2', click: go('system') },
+        { label: 'Nativas', accelerator: 'CmdOrCtrl+2', click: go('native') },
+        { label: 'Verificação do sistema', accelerator: 'CmdOrCtrl+7', click: go('review') },
         { label: 'Google Fonts', accelerator: 'CmdOrCtrl+3', click: go('google') },
         { label: 'Comparar', accelerator: 'CmdOrCtrl+4', click: go('compare') },
         { label: 'Combinar', accelerator: 'CmdOrCtrl+5', click: go('pairs') },
@@ -669,6 +725,8 @@ if (!app.requestSingleInstanceLock()) {
         if (fs.existsSync(f)) { await scanFolder(f); watchFolder(f); }
       }
       changed();
+      await scanSystem();
+      watchSystem();
     }, 400);
     app.on('activate', () => showWindow());
   });

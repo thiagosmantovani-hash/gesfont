@@ -70,7 +70,7 @@ export function mountDetail(root, route) {
     if (cat && cat !== 'other') meta.push(CATEGORY_LABEL[cat]);
     if (fam.designer || (lf && lf.designer)) meta.push(fam.designer || lf.designer);
     if (fam.variable || (lf && lf.variable)) meta.push('Variável');
-    meta.push(fam.kind === 'system' ? 'Fonte do sistema' : isGoogleOnly() ? 'Google Fonts' : lf && lf.sources.has('google') ? 'Baixada do Google Fonts' : 'Biblioteca');
+    meta.push(fam.kind === 'system' ? (lf && lf.faces.every((f) => f.sysKind === 'native') ? 'Nativa do sistema' : 'Instalada no sistema') : isGoogleOnly() ? 'Google Fonts' : lf && lf.sources.has('google') ? 'Baixada do Google Fonts' : 'Biblioteca');
 
     const files = [...new Set(faces.map((f) => f.path))];
     head.append(

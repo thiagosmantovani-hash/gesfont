@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('gesfont', {
   installUpdate: invoke('update:install'),
   trash: invoke('files:trash'),
   scanSystem: invoke('system:scan'),
+  resolveSystem: invoke('system:resolve'),
+  unkeepSystem: invoke('system:unkeep'),
   fontData: invoke('font:data'),
   fontDetails: invoke('font:details'),
   glyphInfo: invoke('font:glyph'),

@@ -60,7 +60,14 @@ No Windows a cópia vai para a pasta de fontes do usuário e é registrada no re
 
 **Tags.** Pelo menu de uma família (botão direito, **Tags…**) você cria tags livres, como estilo, uso ou cliente. As tags aparecem na barra lateral e entram na busca. As tags automáticas (classificação e variável) e as do Google Fonts podem ser ocultadas em Ajustes.
 
-**Google Fonts, glifos, comparar e combinar** continuam como na versão anterior.
+**Fontes do sistema: Nativas e Verificação.** Ao abrir, o GESFONT varre todas as pastas de fontes do computador e separa o que encontrou em dois grupos:
+
+- **Nativas** são as fontes do próprio sistema operacional (no Mac, as de `/System/Library/Fonts` e as que o macOS baixa sob demanda). Ficam sempre ativas e não podem ser movidas nem apagadas, nem pelo GESFONT. A aba Nativas mostra todas, com cadeado. Dá para ver, comparar, combinar e pôr em coleções.
+- **Instaladas** são as que alguém instalou depois, por fora do GESFONT: em `~/Library/Fonts` (só o seu usuário) ou em `/Library/Fonts` (todos os usuários). Elas ficam ativas o tempo todo. A aba **Verificação** lista cada família com uma decisão: **Manter** onde está, **Mover para a GESFONT** (para a pasta "Importadas do sistema", com a opção de continuar ativa, agora controlada pelo app) ou **Apagar** (vai para a Lixeira). Nada muda até você clicar em **Aplicar decisões**. Fontes instaladas para todos os usuários pedem a senha do Mac uma vez. As que você mantém saem da lista e ficam na aba Mantidas, de onde dá para revisar de novo. Quando alguém instala uma fonte nova no sistema, o GESFONT percebe e ela aparece na Verificação.
+
+**Combinar.** Teste título, subtítulo e texto juntos, cada um com fonte, estilo e tamanho próprios. O subtítulo pode ficar como digitado ou em maiúsculas. Em **Cores**, escolha uma das seis paletas prontas ou defina fundo, título, subtítulo, texto, destaque e texto do destaque, pelo seletor ou pelo código hexadecimal. Abaixo do layout, o app mostra o contraste de cada cor com o fundo e avisa quando fica abaixo do recomendado para leitura. O layout de teste tem dois formatos, **Página** e **Post quadrado**, e todos os textos são editáveis. **Copiar especificação** copia fontes, tamanhos e cores em texto, pronto para mandar para o cliente ou para a equipe. As combinações salvas guardam as cores também.
+
+**Google Fonts, glifos e comparar** continuam como na versão anterior.
 
 ## Atualizações automáticas
 
@@ -106,7 +113,7 @@ A engrenagem no rodapé da barra lateral abre os ajustes:
 | Cmd+N | Nova coleção |
 | Cmd+F | Buscar |
 | Cmd+L e Cmd+G | Lista e grade |
-| Cmd+1 a Cmd+6 | Biblioteca, Sistema, Google Fonts, Comparar, Combinar, Duplicadas |
+| Cmd+1 a Cmd+7 | Biblioteca, Nativas, Google Fonts, Comparar, Combinar, Duplicadas, Verificação do sistema |
 | Cmd+ e Cmd- | Aumentar e diminuir a prévia |
 | Cmd+R | Atualizar pastas |
 | Cmd+, | Ajustes |
@@ -122,6 +129,7 @@ A biblioteca, as coleções, as tags, os nomes de família alterados e os ajuste
 main/            processo principal (Node)
   main.js        janela, menu, pasta principal e subpastas, Lixeira, barra de menus, comunicação com a interface
   updater.js     atualizações automáticas (electron-updater e instalador próprio para Mac)
+  system.js      fontes do sistema: nativas, instaladas e as decisões da Verificação
   scanner.js     leitura das pastas e dos metadados das fontes (fontkit)
   activator.js   ativação e desativação por sistema operacional
   google.js      catálogo e downloads do Google Fonts
@@ -134,7 +142,7 @@ renderer/        interface (HTML, CSS e JavaScript sem build)
   folders.js     árvore de pastas da GESFONT, mover fontes entre pastas
   state.js       estado, ações, duplicadas, tags, nomes de família
   components.js  linha e card de família, menu de contexto, seletores
-  views/         listas e grade, detalhes, comparar, combinar, duplicadas, ajustes
+  views/         listas e grade, detalhes, comparar, combinar, duplicadas, verificação, ajustes
 docs/                  site de download (GitHub Pages), lê a última Release pela API
 build/icon.png         ícone do app
 build/adhoc-sign.js    assinatura ad-hoc do app no Mac

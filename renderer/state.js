@@ -47,6 +47,8 @@ export const S = {
   update: null,
   overrides: {},
   tags: {},
+  systemKept: {},
+  systemLocations: [],
   gridText: loadLocal('gridText', 'a'),
   google: { list: null, loading: false, error: null, byKey: new Map() },
   route: { view: 'library', param: null },
@@ -95,6 +97,8 @@ export async function reload() {
   if (!S.update || !S.ready) S.update = st.update;
   S.overrides = st.overrides || {};
   S.tags = st.tags || {};
+  S.systemKept = st.systemKept || {};
+  S.systemLocations = st.systemLocations || [];
   if (!S.ready) {
     S.previewText = samples()[0] || '';
     S.size = st.settings.previewSize || 48;
@@ -148,6 +152,8 @@ function buildSingles(faces, kind) {
 
 function scopeFaces(scope) {
   if (scope === 'system') return S.faces.filter((f) => f.source === 'system');
+  if (scope === 'native') return S.faces.filter((f) => f.source === 'system' && f.sysKind === 'native');
+  if (scope === 'installed') return S.faces.filter((f) => f.source === 'system' && f.sysKind !== 'native');
   if (scope.startsWith('folder:')) { const dir = scope.slice(7); return S.faces.filter((f) => f.source !== 'system' && f.path.startsWith(dir + S.sep)); }
   return S.faces.filter((f) => f.source !== 'system');
 }
@@ -155,7 +161,7 @@ function scopeFaces(scope) {
 export function families(scope = 'library', { split = false } = {}) {
   const ck = scope + (split ? ':split' : '');
   if (famCache.has(ck)) return famCache.get(ck);
-  const kind = scope === 'system' ? 'system' : 'local';
+  const kind = ['system', 'native', 'installed'].includes(scope) ? 'system' : 'local';
   const list = split ? buildSingles(scopeFaces(scope), kind) : buildFamilies(scopeFaces(scope), kind);
   famCache.set(ck, list);
   return list;
@@ -475,6 +481,16 @@ export async function trashPaths(paths) {
   await reload();
   return r;
 }
+
+// ---------- verificação do sistema ----------
+// Famílias instaladas no sistema por fora do GESFONT, com o estado da decisão de cada uma.
+export function installedFamilies() {
+  return families('installed').map((fam) => {
+    const files = [...new Set(fam.faces.map((f) => f.path))];
+    return { ...fam, files, kept: files.every((p) => S.systemKept[p]), admin: fam.faces.some((f) => f.sysAdmin), apple: fam.faces.some((f) => f.sysVendor === 'apple'), where: [...new Set(fam.faces.map((f) => f.sysLabel).filter(Boolean))].join(', ') };
+  });
+}
+export function pendingReviewCount() { return installedFamilies().filter((f) => !f.kept).length; }
 
 // ---------- tags ----------
 export function userTags(key) { return S.tags[key] || []; }

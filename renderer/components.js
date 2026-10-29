@@ -63,7 +63,7 @@ export function statusDot(fam) {
   const st = activeState(fam);
   const lib = fam.kind === 'google' ? libraryMap().get(fam.key) : null;
   const cloud = fam.kind === 'google' && !lib;
-  const label = fam.kind === 'system' ? 'Fonte do sistema, sempre ativa'
+  const label = fam.kind === 'system' ? (fam.faces.every((f) => f.sysKind === 'native') ? 'Fonte nativa do sistema, sempre ativa' : 'Instalada no sistema, sempre ativa. Revise na Verificação.')
     : cloud ? 'Baixar e ativar' : st === 'disabled' ? 'Formato web, não pode ser ativado'
       : st === 'on' ? 'Desativar' : 'Ativar';
   return h('button', {
@@ -115,7 +115,9 @@ export function familyRow(fam, opts = {}) {
   }
 
   const badges = [];
-  if (fam.kind === 'system') badges.push(h('span', { class: 'badge' }, 'Sistema'));
+  if (fam.kind === 'system') badges.push(fam.faces.every((f) => f.sysKind === 'native')
+    ? h('span', { class: 'badge', title: 'Faz parte do sistema operacional. Sempre ativa, não pode ser movida nem apagada.' }, icon('lock', 'badge-ico'), 'Nativa')
+    : h('button', { class: 'badge is-strong', title: 'Instalada no sistema por fora do GESFONT. Clique para revisar.', onClick: (e) => { e.stopPropagation(); navigate('review'); } }, 'Instalada no sistema'));
   if (fam.kind === 'google' && !lib) badges.push(h('span', { class: 'badge' }, 'Google Fonts'));
   if (fam.kind === 'google' && lib) badges.push(h('span', { class: 'badge' }, 'Na biblioteca'));
   if (fam.duplicates) badges.push(h('button', { class: 'badge is-strong', title: 'Há estilos repetidos em arquivos diferentes. Clique para revisar.', onClick: (e) => { e.stopPropagation(); navigate('duplicates'); } }, 'Duplicada'));

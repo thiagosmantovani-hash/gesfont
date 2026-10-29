@@ -5,7 +5,7 @@ import { VirtualList } from '../lib/virtual.js';
 import {
   S, api, listFamilies, resolveFamily, googleFamily, activeState, setFamiliesActive, navigate, loadGoogle,
   saveCollections, deleteCollection, removeFromCollection, classify, presets, persistPreview, saveSettings,
-  libraryMap, COLORS, COLOR_NAMES, reload, saveLocal, renameTag, deleteTag, setFacesActive,
+  libraryMap, COLORS, COLOR_NAMES, reload, saveLocal, renameTag, deleteTag, setFacesActive, pendingReviewCount,
 } from '../state.js';
 import { familyRow, familyCard, rowHeight, cardHeight } from '../components.js';
 import { isInRoot, relPath, newFolder, renameFolder, trashFolder } from '../folders.js';
@@ -28,7 +28,7 @@ function scopeInfo(route) {
     library: { title: 'Todas as fontes' },
     active: { title: 'Ativas' },
     favorites: { title: 'Favoritas' },
-    system: { title: 'Fontes do sistema' },
+    native: { title: 'Fontes nativas' },
     google: { title: 'Google Fonts' },
   }[view] || { title: '' };
 }
@@ -39,7 +39,7 @@ function baseItems(route) {
     case 'library': return listFamilies('library');
     case 'active': return listFamilies('library').filter((f) => ['on', 'mixed'].includes(activeState(f)));
     case 'favorites': return [...S.favorites].map(resolveFamily).filter(Boolean);
-    case 'system': return listFamilies('system');
+    case 'native': return listFamilies('native');
     case 'folder': return listFamilies('folder:' + param);
     case 'google': return (S.google.list || []).map(googleFamily);
     case 'tag': return Object.entries(S.tags).filter(([, t]) => t.includes(param)).map(([k]) => resolveFamily(k)).filter(Boolean);
@@ -164,6 +164,7 @@ export function mountList(root, route) {
       h('h1', { class: 'view-title', title: info.subtitle || '', onDblclick: () => info.col && rename(info.col) }, info.title),
       countEl, headActions),
     isRoot(route) ? h('p', { class: 'view-sub' }, 'Todas as fontes guardadas na pasta GESFONT e nas subpastas. Arraste fontes para esta pasta pelo Finder e elas aparecem aqui sozinhas. ', h('button', { class: 'link', onClick: () => api.openRoot() }, S.rootDir)) : null,
+    route.view === 'native' ? h('p', { class: 'view-sub' }, 'Fontes que fazem parte do sistema operacional. Ficam sempre ativas e não podem ser movidas nem apagadas, nem pelo GESFONT. Dá para ver, comparar, combinar e pôr em coleções.') : null,
     info.inRoot ? h('p', { class: 'view-sub' }, h('button', { class: 'link', onClick: () => navigate('folder', S.rootDir) }, 'GESFONT'), ' / ' + relPath(route.param)) : null,
     h('div', { class: 'testbar' },
       layoutSeg,
@@ -210,8 +211,12 @@ export function mountList(root, route) {
         h('button', { class: 'btn btn-primary', onClick: () => api.chooseFolders() }, icon('folder'), 'Adicionar pasta'));
     } else if (v === 'active' && visible.length) {
       headActions.append(h('button', { class: 'btn', onClick: () => confirmBox('Desativar todas as fontes?', 'As fontes saem do sistema, mas continuam na sua biblioteca. Apps abertos podem precisar ser reiniciados.', 'Desativar todas', async () => { await api.deactivateAll(); await reload(); toast('Todas as fontes foram desativadas'); }) }, 'Desativar todas'));
-    } else if (v === 'system') {
-      headActions.append(h('button', { class: 'btn', onClick: () => api.scanSystem() }, icon('refresh'), 'Ler novamente'));
+    } else if (v === 'native') {
+      const pending = pendingReviewCount();
+      headActions.append(...[
+        pending ? h('button', { class: 'btn', onClick: () => navigate('review') }, icon('shield'), `Verificar ${fmt.plural(pending, 'instalada', 'instaladas')}`) : null,
+        h('button', { class: 'btn', onClick: () => api.scanSystem() }, icon('refresh'), 'Ler novamente'),
+      ].filter(Boolean));
     } else if (v === 'google') {
       headActions.append(h('button', { class: 'btn', onClick: () => loadGoogle(true) }, icon('refresh'), 'Atualizar catálogo'));
     } else if (v === 'folder') {
@@ -295,8 +300,8 @@ export function mountList(root, route) {
     else if (v === 'favorites') node = [h('h2', {}, 'Nenhuma favorita ainda'), h('p', {}, 'Marque a estrela de uma família para encontrá-la aqui.')];
     else if (v === 'collection') node = [h('h2', {}, 'Coleção vazia'), h('p', {}, 'Arraste famílias para esta coleção na barra lateral, ou use o botão + em qualquer família.')];
     else if (v === 'tag') node = [h('h2', {}, 'Nenhuma família com esta tag'), h('p', {}, 'Adicione tags pelo menu de uma família, com o botão direito.')];
-    else if (v === 'system' && S.settings.systemScanned && !S.scan) node = [h('h2', {}, 'Nenhuma fonte do sistema encontrada'), h('button', { class: 'btn', onClick: () => api.scanSystem() }, 'Ler novamente')];
-    else if (v === 'system') node = S.scan ? [h('h2', {}, 'Lendo as fontes do sistema'), h('p', {}, 'Isso acontece só na primeira vez.')] : [h('h2', {}, 'Fontes do sistema'), h('p', {}, 'Veja e compare as fontes que já vêm instaladas.'), h('button', { class: 'btn btn-primary', onClick: () => api.scanSystem() }, 'Ler fontes do sistema')];
+    else if (v === 'native' && S.settings.systemScanned && !S.scan) node = [h('h2', {}, 'Nenhuma fonte nativa encontrada'), h('button', { class: 'btn', onClick: () => api.scanSystem() }, 'Ler novamente')];
+    else if (v === 'native') node = [h('h2', {}, 'Lendo as fontes do sistema'), h('p', {}, 'A primeira leitura leva alguns segundos. As próximas são instantâneas.')];
     else if (v === 'google') {
       if (S.google.loading) node = [h('h2', {}, 'Carregando o catálogo'), h('p', {}, 'São mais de 1.800 famílias. Leva alguns segundos.')];
       else if (S.google.error) node = [h('h2', {}, 'Catálogo indisponível'), h('p', {}, S.google.error), h('button', { class: 'btn btn-primary', onClick: () => loadGoogle(true) }, 'Tentar de novo')];
@@ -319,7 +324,7 @@ export function mountList(root, route) {
 
   buildChips();
   refresh(true);
-  if (route.view === 'system' && !S.settings.systemScanned && !S.scan) api.scanSystem();
+  if (route.view === 'native' && !S.settings.systemScanned && !S.scan) api.scanSystem();
 
   return {
     update: (reason) => { if (reason === 'size') { setSize(S.size); return; } refresh(false); },

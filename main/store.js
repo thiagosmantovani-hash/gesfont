@@ -13,6 +13,7 @@ const DEFAULTS = {
   pairs: [],              // { id, heading: familyKey, body: familyKey, at }
   overrides: {},          // faceId -> nome de família definido pelo usuário (mesclar, renomear)
   tags: {},               // familyKey -> [tag]
+  systemKept: {},         // caminho de fonte instalada no sistema -> quando o usuário decidiu manter
   settings: {
     theme: 'system',            // system | light | dark
     rootDir: '',                // pasta principal (padrão ~/GESFONT)

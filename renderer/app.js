@@ -2,7 +2,7 @@
 import { h, icon, menu, prompt, confirmBox, toast, fmt } from './lib/ui.js';
 import {
   S, api, reload, subscribe, navigate, families, activeState, createCollection, addToCollection, saveCollections,
-  deleteCollection, applyTheme, COLORS, COLOR_NAMES, emit, duplicateGroups, similarFamilies, allTags, saveSettings,
+  deleteCollection, applyTheme, COLORS, COLOR_NAMES, emit, duplicateGroups, similarFamilies, allTags, saveSettings, pendingReviewCount,
 } from './state.js';
 import { mountList } from './views/list.js';
 import { mountDetail } from './views/detail.js';
@@ -10,6 +10,7 @@ import { mountCompare } from './views/compare.js';
 import { mountPairs } from './views/pairs.js';
 import { mountDuplicates } from './views/duplicates.js';
 import { mountSettings } from './views/settings.js';
+import { mountReview } from './views/review.js';
 import { folderTreeNav, rootDropTarget, newFolder, isInRoot, movePaths } from './folders.js';
 
 const sidebar = document.getElementById('sidebar');
@@ -88,7 +89,8 @@ function drawSidebar() {
         navItem('library', 'Todas as fontes', 'library', lib.length),
         navItem('active', 'Ativas', 'zap', active),
         navItem('favorites', 'Favoritas', 'star', S.favorites.size),
-        navItem('system', 'Sistema', 'monitor', S.settings.systemScanned ? families('system').length : 0),
+        navItem('native', 'Nativas', 'lock', S.settings.systemScanned ? families('native').length : 0),
+        reviewNav(),
         navItem('google', 'Google Fonts', 'globe', S.google.list ? S.google.list.length : 0)),
       h('div', { class: 'nav-group' },
         navItem('compare', 'Comparar', 'compare', S.compare.length),
@@ -122,12 +124,21 @@ function updateBanner() {
   return ''; // nada a mostrar (string vazia: append do DOM escreveria "null")
 }
 
+// Etapa de verificação: destaca quantas fontes instaladas no sistema ainda esperam decisão.
+function reviewNav() {
+  const pending = S.settings.systemScanned ? pendingReviewCount() : 0;
+  const on = S.route.view === 'review';
+  return h('button', { class: 'nav-item' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, onClick: () => navigate('review') },
+    icon('shield'), h('span', { class: 'nav-label' }, 'Verificação'), pending ? h('span', { class: 'nav-pill', title: `${pending} aguardando decisão` }, fmt.int(pending)) : null);
+}
+
 function newCollection() {
   prompt('Nova coleção', '', (name) => { const c = createCollection(name); navigate('collection', c.id); }, 'Criar coleção');
 }
 
 // ---------- roteamento ----------
 function mountView() {
+  if (S.route.view === 'system') S.route = { view: 'native', param: null }; // nome antigo da aba
   const key = S.route.view + ':' + S.route.param;
   if (current && key === currentKey) return;
   if (current) current.destroy();
@@ -139,6 +150,7 @@ function mountView() {
   else if (v === 'pairs') current = mountPairs(main);
   else if (v === 'duplicates') current = mountDuplicates(main);
   else if (v === 'settings') current = mountSettings(main);
+  else if (v === 'review') current = mountReview(main);
   else current = mountList(main, S.route);
 }
 
