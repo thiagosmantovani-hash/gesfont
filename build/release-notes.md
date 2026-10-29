@@ -1,3 +1,3 @@
-- O aviso de nova versão agora aparece no centro do app, com as novidades, e você escolhe entre atualizar agora ou depois.
-- Combinar: todos os formatos com fundo neutro e o mesmo layout da página. O painel lateral controla só as fontes.
-- Combinar: as faixas de cor dos formatos de arte foram removidas.
+- Combinar: cada etapa do texto (título, subtítulo e texto) tem sua própria caixa de texto, com o modelo pronto.
+- Combinar: caixa alta ou baixa, entrelinha e espaçamento entre caracteres em todas as etapas.
+- Combinar: as cores voltaram, com seis combinações prontas e cores personalizadas, sem mudar o layout.
