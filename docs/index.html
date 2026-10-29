@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GESFONT · Gestão de fontes para Mac</title>
+  <meta name="description" content="O GESFONT organiza suas fontes por cliente, ativa e desativa sem instalar nada para sempre, encontra duplicadas e testa combinações. Grátis, para Mac com chip Apple ou Intel.">
+  <meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e0e0e" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GESFONT · Gestão de fontes para Mac">
+  <meta property="og:description" content="Suas fontes organizadas por cliente, ativas só quando você precisa. Grátis, para Mac.">
+  <meta property="og:image" content="https://thiagosmantovani-hash.github.io/gesfont-releases/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <script>
+    // Tema antes de pintar, para não piscar: o escolhido, ou o do sistema.
+    try {
+      var saved = localStorage.getItem('gesfont-theme');
+      var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@700&family=Bricolage+Grotesque:wght@800&family=Fraunces:wght@800&family=Instrument+Serif:ital@1&family=Space+Mono:wght@700&family=Young+Serif&text=fontes&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#inicio" aria-label="GESFONT, início">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="currentColor"/><g fill="none" stroke="var(--mark-ink)" stroke-width="10"><path d="M 50 20 A 30 30 0 1 0 80 50 H 50"/><path d="M 50 15 V 80"/><path d="M 45 20 H 82"/></g></svg>
+      <span>GESFONT</span>
+    </a>
+    <nav class="nav" aria-label="Seções">
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#instalar">Como instalar</a>
+      <a href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases" data-releases>Versões</a>
+    </nav>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="theme" type="button" aria-label="Alternar tema claro e escuro">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>
+      </button>
+      <a class="btn btn-sm" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-dl="primary">Baixar</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="hero" id="inicio">
+  <div class="wrap">
+    <a class="pill" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-releases-latest>
+      <span class="dot-on" aria-hidden="true"></span>
+      <span data-version-label>Versão mais recente</span>
+    </a>
+    <h1 aria-label="Suas fontes, no lugar certo.">
+      Suas <span class="cycle" id="cycle" aria-hidden="true">fontes</span>,<br>no lugar certo.
+    </h1>
+    <p class="lead">O GESFONT reúne a sua biblioteca numa pasta só, organiza tudo por cliente, ativa e desativa fontes sem instalar nada para sempre e mostra o que está repetido. Do jeito que quem trabalha com marca precisa.</p>
+
+    <div class="cta">
+      <a class="btn btn-lg" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-dl="primary">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
+        <span>Baixar para Mac</span>
+      </a>
+      <p class="cta-sub"><span data-primary-label>Mac com chip Apple</span><span data-primary-size></span></p>
+      <p class="cta-alt"><span data-alt-q>Seu Mac tem processador Intel?</span> <a href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-dl="alt">Baixe esta versão</a></p>
+      <p class="cta-warn" id="notmac" hidden>O GESFONT é um app para Mac. Abra esta página no seu Mac para baixar.</p>
+    </div>
+
+    <ul class="meta">
+      <li>Grátis</li>
+      <li>macOS 11 ou superior</li>
+      <li>Chip Apple e Intel</li>
+      <li>Atualiza sozinho</li>
+    </ul>
+  </div>
+
+  <div class="wrap wrap-wide">
+    <figure class="window window-hero">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/biblioteca-light.webp" width="2000" height="1225" alt="Janela do GESFONT com a lista de todas as fontes, coleções, tags e pastas na barra lateral">
+      <img class="shot-dark" src="img/biblioteca-dark.webp" width="2000" height="1225" alt="Janela do GESFONT no tema escuro com a lista de todas as fontes" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<section class="features" id="funcionalidades">
+  <div class="wrap">
+    <p class="kicker">Funcionalidades</p>
+    <h2 class="section-title">Feito para quem escolhe fonte todo dia.</h2>
+  </div>
+
+  <article class="feature wrap wrap-wide">
+    <div class="feature-text">
+      <h3>Uma pasta só para a sua biblioteca.</h3>
+      <p>Na primeira abertura o GESFONT cria a pasta GESFONT no seu usuário. O que você organiza no app aparece no Finder, e o que você arrasta no Finder aparece no app.</p>
+      <ul>
+        <li>Subpastas viram uma árvore na barra lateral.</li>
+        <li>Pastas do servidor ou do Dropbox são lidas no lugar, sem mover nada.</li>
+        <li>Lista com texto longo ou grade com um glifo por família.</li>
+      </ul>
+    </div>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/grade-light.webp" width="2000" height="1225" alt="Grade de famílias no GESFONT, com um par de letras de cada fonte e o estado de ativação" loading="lazy">
+      <img class="shot-dark" src="img/grade-dark.webp" width="2000" height="1225" alt="Grade de famílias no GESFONT, tema escuro" loading="lazy">
+    </figure>
+  </article>
+
+  <article class="feature feature-rev wrap wrap-wide">
+    <div class="feature-text">
+      <h3>Cada cliente com as suas fontes.</h3>
+      <p>Monte uma coleção por cliente ou projeto e ative tudo de uma vez quando o job abrir. Quando fechar, desative com um clique e o Mac volta a ficar leve.</p>
+      <ul>
+        <li>Exporte os arquivos de uma coleção para uma pasta.</li>
+        <li>Tags livres, como estilo, uso ou cliente, entram na busca.</li>
+        <li>Leve suas coleções para outro Mac num arquivo só.</li>
+      </ul>
+    </div>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/colecao-light.webp" width="2000" height="1225" alt="Coleção de um cliente no GESFONT com três famílias ativas" loading="lazy">
+      <img class="shot-dark" src="img/colecao-dark.webp" width="2000" height="1225" alt="Coleção de um cliente no GESFONT, tema escuro" loading="lazy">
+    </figure>
+  </article>
+
+  <article class="feature wrap wrap-wide">
+    <div class="feature-text">
+      <h3>Ative sem instalar para sempre.</h3>
+      <p>Ativar copia a fonte para o sistema e ela aparece na hora em todos os apps. Desativar apaga só essa cópia: o arquivo original continua na pasta dele.</p>
+      <ul>
+        <li>Fontes instaladas por fora do GESFONT nunca são removidas.</li>
+        <li>Glifos por bloco, recursos OpenType e eixos variáveis.</li>
+        <li>Copie o caractere ou o código Unicode com um clique.</li>
+      </ul>
+    </div>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/glifos-light.webp" width="2000" height="1225" alt="Detalhes da família Fraunces no GESFONT, com a grade de glifos e o painel do caractere selecionado" loading="lazy">
+      <img class="shot-dark" src="img/glifos-dark.webp" width="2000" height="1225" alt="Detalhes da família Fraunces, tema escuro" loading="lazy">
+    </figure>
+  </article>
+
+  <article class="feature feature-rev wrap wrap-wide">
+    <div class="feature-text">
+      <h3>Teste antes de levar ao cliente.</h3>
+      <p>Compare até oito fontes lado a lado com o mesmo texto e combine título e texto em tamanhos reais, com acentos e parágrafos de verdade. Salve as combinações que funcionaram.</p>
+      <ul>
+        <li>Escolha o estilo de cada fonte na comparação.</li>
+        <li>Ajuste tamanho, entrelinha e fundo claro ou escuro.</li>
+        <li>Navegue e baixe do Google Fonts sem sair do app.</li>
+      </ul>
+    </div>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/combinar-light.webp" width="2000" height="1225" alt="Tela Combinar do GESFONT testando um título em Young Serif com texto em DM Sans" loading="lazy">
+      <img class="shot-dark" src="img/combinar-dark.webp" width="2000" height="1225" alt="Tela Combinar do GESFONT, tema escuro" loading="lazy">
+    </figure>
+  </article>
+
+  <article class="feature wrap wrap-wide">
+    <div class="feature-text">
+      <h3>Adeus, fonte repetida.</h3>
+      <p>O GESFONT lista os estilos que aparecem em mais de um arquivo, com versão, formato e pasta, e marca os que são idênticos. Mantenha um e mande os outros para a Lixeira.</p>
+      <ul>
+        <li><strong>Resolver todas</strong> fica com a versão mais nova.</li>
+        <li>Sugere famílias com nomes quase iguais para mesclar.</li>
+        <li>Tudo vai para a Lixeira e pode ser recuperado.</li>
+      </ul>
+    </div>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img class="shot-light" src="img/duplicadas-light.webp" width="2000" height="1225" alt="Tela Duplicadas do GESFONT com arquivos repetidos agrupados por estilo" loading="lazy">
+      <img class="shot-dark" src="img/duplicadas-dark.webp" width="2000" height="1225" alt="Tela Duplicadas do GESFONT, tema escuro" loading="lazy">
+    </figure>
+  </article>
+
+  <div class="wrap">
+    <ul class="extras">
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4.5h-4.5"/></svg>
+        <h4>Atualiza sozinho</h4>
+        <p>As versões novas chegam pelo próprio app. Um clique em Reiniciar e atualizar e pronto.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h1M11 10h1M15 10h2M7 14h10"/></svg>
+        <h4>Atalhos de teclado</h4>
+        <p>⌘F para buscar, ⌘L e ⌘G para lista e grade, ⌘1 a ⌘6 para trocar de tela.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor"/></svg>
+        <h4>Claro ou escuro</h4>
+        <p>Segue o tema do Mac ou fica do jeito que você escolher.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 6v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6M3 6l2-3h14l2 3M9 11h6"/></svg>
+        <h4>Na barra de menus</h4>
+        <p>Feche a janela e o GESFONT continua ali, pronto para ativar o que faltar.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <h4>Seus dados no seu Mac</h4>
+        <p>Biblioteca, coleções e ajustes ficam num arquivo local. Sem conta, sem nuvem.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m16 17 2 2 3-4"/></svg>
+        <h4>Nomes em ordem</h4>
+        <p>Renomeie ou mescle famílias no app sem tocar nos arquivos. Dá para desfazer.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="install" id="instalar">
+  <div class="wrap">
+    <p class="kicker">Como instalar</p>
+    <h2 class="section-title">Três passos, uma vez só.</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>Baixe o instalador</h3>
+        <p>Escolha a versão do seu Mac. Para saber qual é, abra o menu Apple e clique em <strong>Sobre este Mac</strong>: se aparecer <em>Chip</em>, é Apple; se aparecer <em>Processador Intel</em>, é Intel.</p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>Arraste para Aplicativos</h3>
+        <p>Abra o arquivo <code>.dmg</code> e arraste o GESFONT para a pasta <strong>Aplicativos</strong>. Ele precisa ficar lá para conseguir se atualizar sozinho.</p>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>Libere na primeira abertura</h3>
+        <p>O macOS avisa que não pôde verificar o desenvolvedor. Clique em <strong>OK</strong>, vá em <strong>Ajustes do Sistema → Privacidade e Segurança</strong> e clique em <strong>Abrir Mesmo Assim</strong>.</p>
+      </li>
+    </ol>
+    <p class="install-note">O aviso aparece porque o GESFONT ainda não tem o certificado pago da Apple. Depois da primeira abertura ele não volta, e as próximas versões chegam pelo próprio app.</p>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap final-in">
+    <svg class="mark mark-xl" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="currentColor"/><g fill="none" stroke="var(--mark-ink)" stroke-width="10"><path d="M 50 20 A 30 30 0 1 0 80 50 H 50"/><path d="M 50 15 V 80"/><path d="M 45 20 H 82"/></g></svg>
+    <h2>Sua biblioteca merece ordem.</h2>
+    <p>Baixe, arraste suas fontes para a pasta GESFONT e deixe o resto com ele.</p>
+    <a class="btn btn-lg" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-dl="primary">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
+      <span>Baixar para Mac</span>
+    </a>
+    <p class="cta-sub"><span data-version-short></span></p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-in">
+    <p>GESFONT, feito por Thiago Mantovani.</p>
+    <nav aria-label="Rodapé">
+      <a href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases" data-releases>Versões anteriores</a>
+      <a href="https://github.com/thiagosmantovani-hash/gesfont-releases">Código no GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="main.js" defer></script>
+</body>
+</html>

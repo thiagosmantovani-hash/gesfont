@@ -2,6 +2,8 @@
 
 Gestão de fontes para Mac (também roda em Windows e Linux). Organiza a biblioteca por cliente, ativa e desativa fontes sem instalar nada de forma definitiva, encontra e resolve duplicadas, navega pelo Google Fonts, mostra glifos e recursos OpenType, compara fontes e testa combinações de título e texto.
 
+**Site para baixar:** https://thiagosmantovani-hash.github.io/gesfont-releases/
+
 ## Instalar
 
 1. Abra a [última versão](https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest) e baixe o `.dmg`:
@@ -133,6 +135,7 @@ renderer/        interface (HTML, CSS e JavaScript sem build)
   state.js       estado, ações, duplicadas, tags, nomes de família
   components.js  linha e card de família, menu de contexto, seletores
   views/         listas e grade, detalhes, comparar, combinar, duplicadas, ajustes
+docs/                  site de download (GitHub Pages), lê a última Release pela API
 build/icon.png         ícone do app
 build/adhoc-sign.js    assinatura ad-hoc do app no Mac
 .github/workflows/     automação que gera e publica as versões
