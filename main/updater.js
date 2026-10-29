@@ -6,7 +6,7 @@
 // - "swap": usado no Mac sem assinatura, onde o macOS não deixa o Squirrel trocar o app.
 //   O GESFONT baixa o .zip da versão nova, confere o SHA-512 publicado no latest-mac.yml,
 //   extrai, e ao reiniciar um script troca o GESFONT.app em Aplicativos e abre a versão nova.
-const { app, shell, net, dialog, Notification, BrowserWindow } = require('electron');
+const { app, shell, net, Notification, BrowserWindow } = require('electron');
 const { execFile, spawn } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -115,33 +115,28 @@ function mainWindow() {
   return BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) || null;
 }
 
-// Pergunta se o usuário quer baixar e instalar agora. Com a janela escondida, avisa por notificação.
-async function ask(info) {
-  if (asking) return;
+// Mostra o aviso de nova versão no centro do app (bloqueia o uso até fechar ou atualizar).
+// Com a janela escondida, avisa por notificação do sistema e abre o aviso ao clicar.
+function ask(info) {
   const win = mainWindow();
   if (!win || !win.isVisible()) {
     if (Notification.isSupported()) {
-      const n = new Notification({ title: `GESFONT ${info.version} disponível`, body: 'Clique para ver as novidades e atualizar.', silent: false });
-      n.on('click', () => { if (ctx.showWindow) ctx.showWindow(); setTimeout(() => ask(info), 300); });
+      const n = new Notification({ title: `GESFONT ${info.version} disponível`, body: 'Clique para ver as novidades e atualizar.' });
+      n.on('click', () => { if (ctx.showWindow) ctx.showWindow(); setTimeout(() => ask(info), 400); });
       n.show();
     }
     return;
   }
   asking = true;
-  const notes = notesOf(info);
-  try {
-    const { response } = await dialog.showMessageBox(win, {
-      type: 'info',
-      buttons: ['Baixar e instalar', 'Agora não'],
-      defaultId: 0,
-      cancelId: 1,
-      noLink: true,
-      message: `O GESFONT ${info.version} está disponível`,
-      detail: `Você está usando a versão ${app.getVersion()}.${notes ? `\n\nNovidades:\n${notes}` : ''}\n\nO GESFONT baixa a versão nova, fecha e abre de novo já atualizado. Leva cerca de um minuto. Suas fontes, coleções e ajustes continuam iguais.`,
-    });
-    if (response === 0) accept();
-    else { dismissed = info.version; set({ phase: 'available', version: info.version }); }
-  } finally { asking = false; manualCheck = false; }
+  ctx.send('update:prompt', { version: info.version, current: app.getVersion(), notes: notesOf(info) });
+}
+
+// Resposta do aviso: aceitar (baixar e instalar) ou adiar até a próxima abertura.
+function respond(answer) {
+  asking = false;
+  manualCheck = false;
+  if (answer === 'accept') accept();
+  else if (state.version) { dismissed = state.version; set({ phase: 'available' }); }
 }
 
 // O usuário aceitou: baixa e, ao terminar, instala e reabre.
@@ -275,7 +270,7 @@ rm -f "$0"
 
 function install() {
   if (state.phase === 'manual') { shell.openExternal(state.manualUrl || RELEASES_URL); return; }
-  if (state.phase === 'available') { accept(); return; }
+  if (state.phase === 'available') { if (lastInfo) ask(lastInfo); else accept(); return; }
   if (mode === 'swap') {
     if (state.phase === 'ready' && pending) swapInstall();
     return;
@@ -286,4 +281,4 @@ function install() {
   }
 }
 
-module.exports = { init, check, install, status, RELEASES_URL };
+module.exports = { init, check, install, respond, status, RELEASES_URL };

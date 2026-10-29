@@ -119,7 +119,7 @@ function drawSidebar() {
 function updateBanner() {
   const u = S.update || {};
   if (u.phase === 'ready') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} pronta`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, 'Reiniciar e atualizar'));
-  if (u.phase === 'manual' || u.phase === 'available') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} disponível`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, u.phase === 'manual' ? 'Baixar' : 'Baixar e instalar'));
+  if (u.phase === 'manual' || u.phase === 'available') return h('div', { class: 'update-bar' }, h('span', {}, `Versão ${u.version} disponível`), h('button', { class: 'btn btn-sm btn-primary', onClick: () => api.installUpdate() }, u.phase === 'manual' ? 'Baixar' : 'Atualizar'));
   if (u.phase === 'downloading') return h('div', { class: 'update-bar is-quiet' }, h('span', {}, `Baixando a versão ${u.version || 'nova'}: ${u.percent || 0}%`), h('span', { class: 'update-progress' }, h('i', { style: { width: (u.percent || 0) + '%' } })), h('span', { class: 'small' }, 'O app reinicia sozinho ao terminar.'));
   return ''; // nada a mostrar (string vazia: append do DOM escreveria "null")
 }
@@ -130,6 +130,65 @@ function reviewNav() {
   const on = S.route.view === 'review';
   return h('button', { class: 'nav-item' + (on ? ' is-on' : ''), 'aria-current': on ? 'page' : null, onClick: () => navigate('review') },
     icon('shield'), h('span', { class: 'nav-label' }, 'Verificação'), pending ? h('span', { class: 'nav-pill', title: `${pending} aguardando decisão` }, fmt.int(pending)) : null);
+}
+
+// ---------- aviso de nova versão ----------
+// Fica no centro do app e bloqueia o uso até a pessoa fechar ou atualizar.
+let updateOpen = null;
+
+function showUpdatePrompt(p) {
+  const root = document.getElementById('update-root');
+  const notes = (p.notes || '').split('\n').map((l) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+  const close = () => { root.hidden = true; root.innerHTML = ''; updateOpen = null; document.removeEventListener('keydown', onKey, true); };
+  const later = () => { api.respondUpdate('dismiss'); close(); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!updateOpen || !updateOpen.busy) later(); }
+    if (e.key === 'Tab') { // mantém o foco dentro do aviso
+      const f = [...root.querySelectorAll('button:not([disabled])')];
+      if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  };
+  const actions = h('div', { class: 'upd-actions' });
+  const progress = h('div', { class: 'upd-progress', hidden: true }, h('div', { class: 'upd-bar' }, h('i')), h('p', { class: 'upd-status' }));
+  const card = h('div', { class: 'upd-card', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'upd-title', 'aria-describedby': 'upd-desc' },
+    h('button', { class: 'icon-btn upd-close', title: 'Fechar', 'aria-label': 'Fechar e atualizar depois', onClick: () => { if (!updateOpen.busy) later(); else close(); } }, icon('x')),
+    brandMark(44),
+    h('p', { class: 'upd-kicker' }, 'Atualização disponível'),
+    h('h2', { id: 'upd-title', class: 'upd-title' }, `GESFONT ${p.version}`),
+    h('p', { id: 'upd-desc', class: 'upd-desc' }, `Você está usando a versão ${p.current}. A atualização leva cerca de um minuto: o app baixa a versão nova, fecha e abre de novo. Suas fontes, coleções e ajustes continuam iguais.`),
+    notes.length ? h('div', { class: 'upd-notes' }, h('h3', {}, 'Novidades'), h('ul', {}, notes.map((n) => h('li', {}, n)))) : null,
+    progress,
+    actions);
+  actions.append(
+    h('button', { class: 'btn', onClick: later }, 'Agora não'),
+    h('button', { class: 'btn btn-primary', onClick: () => {
+      updateOpen.busy = true;
+      api.respondUpdate('accept');
+      actions.innerHTML = '';
+      actions.append(h('button', { class: 'btn', onClick: close }, 'Continuar usando enquanto baixa'));
+      progress.hidden = false;
+      paintProgress(S.update || {});
+    } }, 'Atualizar agora'));
+  root.innerHTML = '';
+  root.append(h('div', { class: 'upd-backdrop' }), card);
+  root.hidden = false;
+  updateOpen = { busy: false, progress };
+  document.addEventListener('keydown', onKey, true);
+  setTimeout(() => actions.querySelector('.btn-primary')?.focus(), 30);
+}
+
+function paintProgress(u) {
+  if (!updateOpen || !updateOpen.busy) return;
+  const bar = updateOpen.progress.querySelector('.upd-bar i');
+  const txt = updateOpen.progress.querySelector('.upd-status');
+  const pct = u.phase === 'ready' ? 100 : u.percent || 0;
+  bar.style.width = pct + '%';
+  if (u.phase === 'ready') updateOpen.progress.parentElement.querySelector('.upd-actions')?.replaceChildren();
+  txt.textContent = u.phase === 'ready' ? 'Instalando. O GESFONT vai fechar e abrir de novo.'
+    : u.phase === 'manual' || u.phase === 'error' ? (u.message || 'Não foi possível atualizar agora.')
+      : `Baixando a versão nova: ${pct}%`;
 }
 
 function newCollection() {
@@ -196,8 +255,10 @@ api.on('scan:progress', (p) => {
   if (p.finished) drawSidebar();
 });
 api.on('menu:navigate', (v) => navigate(v));
+api.on('update:prompt', (p) => showUpdatePrompt(p));
 api.on('update:status', (u) => {
   S.update = u;
+  paintProgress(u);
   drawSidebar();
   if (u.manual && u.phase === 'latest') toast(`Você já está na versão mais recente (${S.appVersion}).`);
   if (u.manual && ['offline', 'error'].includes(u.phase)) toast(u.message || 'Não foi possível verificar atualizações.', 'error');

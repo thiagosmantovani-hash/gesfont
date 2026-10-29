@@ -1,2 +1,3 @@
-- Quando sai uma versão nova, o GESFONT avisa e pergunta se você quer baixar e instalar.
-- Combinar: novos formatos de teste em tamanho real: horizontal 1920×1080, vertical 1080×1920, retrato 1080×1440 e quadrado 1080×1080.
+- O aviso de nova versão agora aparece no centro do app, com as novidades, e você escolhe entre atualizar agora ou depois.
+- Combinar: todos os formatos com fundo neutro e o mesmo layout da página. O painel lateral controla só as fontes.
+- Combinar: as faixas de cor dos formatos de arte foram removidas.

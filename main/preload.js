@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('gesfont', {
   moveInto: invoke('rootfs:move'),
   checkUpdate: invoke('update:check'),
   installUpdate: invoke('update:install'),
+  respondUpdate: invoke('update:respond'),
   trash: invoke('files:trash'),
   scanSystem: invoke('system:scan'),
   resolveSystem: invoke('system:resolve'),
@@ -38,7 +39,7 @@ contextBridge.exposeInMainWorld('gesfont', {
   openExternal: invoke('shell:open'),
   pathForFile: (file) => webUtils.getPathForFile(file),
   on: (channel, fn) => {
-    const allowed = ['library:changed', 'scan:progress', 'menu:navigate', 'menu:addFolder', 'menu:importFiles', 'menu:newCollection', 'menu:rescan', 'menu:find', 'menu:size', 'menu:layout', 'update:status'];
+    const allowed = ['library:changed', 'scan:progress', 'menu:navigate', 'menu:addFolder', 'menu:importFiles', 'menu:newCollection', 'menu:rescan', 'menu:find', 'menu:size', 'menu:layout', 'update:status', 'update:prompt'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (_e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);

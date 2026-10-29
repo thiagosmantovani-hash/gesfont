@@ -515,6 +515,7 @@ function registerIpc() {
   ipcMain.handle('rootfs:move', async (_e, paths, dest) => { try { return { ok: true, ...(await moveInto(paths, dest)) }; } catch (e) { return { ok: false, message: e.message }; } });
   ipcMain.handle('update:check', () => updater.check(true));
   ipcMain.handle('update:install', () => updater.install());
+  ipcMain.handle('update:respond', (_e, answer) => updater.respond(answer));
   ipcMain.handle('files:trash', (_e, paths) => trashFiles(paths));
   ipcMain.handle('system:scan', () => scanSystem());
   ipcMain.handle('system:resolve', (_e, items) => resolveSystem(items));

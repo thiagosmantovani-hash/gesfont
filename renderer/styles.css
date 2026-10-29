@@ -623,23 +623,18 @@ button.dup-name:hover { text-decoration: underline; text-underline-offset: 3px; 
 .art-caption { margin: 0; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .artboard {
   position: absolute; top: 0; left: 0; transform-origin: 0 0;
-  display: flex; flex-direction: column; padding: 0 96px 96px; overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--c-bg, #fff); color: var(--c-body, #000);
 }
 .artboard > * { flex-shrink: 0; }
 .artboard [contenteditable] { outline: none; }
-.artboard .post-band { flex: 0 0 24%; margin: 0 -96px auto; padding: 72px 96px; background: var(--c-accent); }
-.artboard .post-tag { color: var(--c-accent-text); }
 .artboard .post-title { margin: 0 0 .25em; line-height: 1.02; font-weight: normal; color: var(--c-title); }
 .artboard .post-sub { margin: 0 0 .7em; line-height: 1.2; color: var(--c-sub); }
 .artboard .post-body { margin: 0 0 1.2em; color: var(--c-body); max-width: 24em; }
 .artboard .pair-cta { align-self: flex-start; margin-top: 0; }
-.art-story .post-band { flex-basis: 18%; }
-.art-portrait .post-band { flex-basis: 22%; }
-.art-square .post-band { flex-basis: 26%; }
-/* horizontal: faixa de destaque na lateral e conteúdo à direita */
-.art-land { padding: 96px 110px 110px 790px; justify-content: flex-end; }
-.art-land .post-band { position: absolute; top: 0; bottom: 0; left: 0; width: 690px; margin: 0; padding: 88px 80px; }
+/* mesmo layout da página: fundo liso, texto alinhado à esquerda e centralizado na altura */
+.artboard { justify-content: center; padding: 120px; }
+.art-land { padding: 120px 200px; }
 
 .formats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .format { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px 8px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raised); }
@@ -649,3 +644,30 @@ button.dup-name:hover { text-decoration: underline; text-underline-offset: 3px; 
 .format-shape i { display: block; border: 1.5px solid var(--ink); border-radius: 2px; }
 .format-name { font-size: 12px; font-weight: 600; }
 .format-size { font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- v2.4: aviso de nova versão ---------- */
+.update-root { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; }
+.update-root[hidden] { display: none; }
+.upd-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.upd-card {
+  position: relative; width: min(460px, 100%); max-height: calc(100vh - 48px); overflow-y: auto;
+  padding: 36px 36px 28px; border-radius: 16px; background: var(--raised); color: var(--ink);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45); text-align: left; animation: upd-in .22s ease-out;
+}
+@keyframes upd-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+.upd-close { position: absolute; top: 14px; right: 14px; }
+.upd-card .brand-mark { margin-bottom: 18px; }
+.upd-kicker { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+.upd-kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neon) 30%, transparent); }
+.upd-title { margin: 0 0 10px; font-size: 26px; font-weight: 750; letter-spacing: -.02em; }
+.upd-desc { margin: 0 0 18px; color: var(--ink-2); line-height: 1.55; }
+.upd-notes { margin: 0 0 22px; padding: 14px 16px; border-radius: 10px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-soft); }
+.upd-notes h3 { margin: 0 0 6px; font-size: 12px; font-weight: 700; }
+.upd-notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; line-height: 1.45; }
+.upd-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.upd-actions .btn { height: 38px; padding: 0 18px; }
+.upd-progress { margin: 0 0 20px; }
+.upd-progress[hidden] { display: none; }
+.upd-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.upd-bar i { display: block; height: 100%; width: 0; background: var(--neon-edge); transition: width .3s; }
+.upd-status { margin: 8px 0 0; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
