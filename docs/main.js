@@ -10,25 +10,6 @@ const API = `https://api.github.com/repos/${REPO}/releases/latest`;
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
-// ---------- tema ----------
-const root = document.documentElement;
-function paintThemeColor() {
-  const c = root.classList.contains('dark') ? '#0e0e0e' : '#efeee9';
-  $$('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', c));
-}
-$('#theme').addEventListener('click', () => {
-  const dark = !root.classList.contains('dark');
-  root.classList.toggle('dark', dark);
-  try { localStorage.setItem('gesfont-theme', dark ? 'dark' : 'light'); } catch (e) {}
-  paintThemeColor();
-});
-try {
-  if (!localStorage.getItem('gesfont-theme')) {
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => { root.classList.toggle('dark', e.matches); paintThemeColor(); });
-  }
-} catch (e) {}
-paintThemeColor();
-
 // ---------- topo com borda ao rolar ----------
 const topbar = $('.topbar');
 const onScroll = () => topbar.classList.toggle('is-scrolled', scrollY > 8);
