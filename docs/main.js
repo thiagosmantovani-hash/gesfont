@@ -13,7 +13,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 // ---------- tema ----------
 const root = document.documentElement;
 function paintThemeColor() {
-  const c = root.classList.contains('dark') ? '#0e0e0e' : '#f7f6f3';
+  const c = root.classList.contains('dark') ? '#0e0e0e' : '#efeee9';
   $$('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', c));
 }
 $('#theme').addEventListener('click', () => {
