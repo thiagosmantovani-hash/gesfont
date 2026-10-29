@@ -48,7 +48,7 @@ if (cycle && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
 }
 
 // ---------- entrada suave das seções ----------
-const revealEls = $$('.feature, .extras, .steps, .final-in');
+const revealEls = $$('.feature, .extras, .steps, .final-in, .combo-cards, .news');
 if ('IntersectionObserver' in window) {
   revealEls.forEach((el) => el.classList.add('reveal'));
   const io = new IntersectionObserver((entries) => {
@@ -56,6 +56,53 @@ if ('IntersectionObserver' in window) {
   }, { rootMargin: '0px 0px -10% 0px' });
   revealEls.forEach((el) => io.observe(el));
 }
+
+// ---------- Combinar: abas de formato ----------
+// Troca a tela pelo formato escolhido. Gira sozinho enquanto a seção está visível,
+// até a pessoa clicar numa aba.
+(() => {
+  const tabs = $$('.format');
+  const img = $('#combinar-img');
+  const caption = $('#combinar-caption');
+  if (!tabs.length || !img) return;
+  const names = { pagina: 'Página', horizontal: 'Horizontal', vertical: 'Vertical', retrato: 'Retrato', quadrado: 'Quadrado' };
+  // pré-carrega as telas para a troca ser instantânea
+  tabs.forEach((t) => { const i = new Image(); i.src = `img/combinar-${t.dataset.format}.webp`; });
+
+  let current = 0;
+  let auto = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let timer = null;
+  let visible = false;
+
+  function show(i, focus) {
+    current = (i + tabs.length) % tabs.length;
+    const t = tabs[current];
+    tabs.forEach((x) => { const on = x === t; x.classList.toggle('is-on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); x.tabIndex = on ? 0 : -1; });
+    if (focus) t.focus();
+    const src = `img/combinar-${t.dataset.format}.webp`;
+    if (img.getAttribute('src') === src) return;
+    img.classList.add('is-out');
+    setTimeout(() => {
+      img.src = src;
+      img.alt = `Tela Combinar do GESFONT no formato ${names[t.dataset.format]}, ${t.dataset.caption}`;
+      caption.textContent = t.dataset.caption;
+      img.classList.remove('is-out');
+    }, 180);
+  }
+  function stop() { auto = false; clearInterval(timer); timer = null; }
+  function play() { if (auto && visible && !timer) timer = setInterval(() => show(current + 1), 4200); }
+
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => { stop(); show(i); });
+    t.addEventListener('keydown', (e) => {
+      const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (d) { e.preventDefault(); stop(); show(current + d, true); }
+    });
+  });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) play(); else { clearInterval(timer); timer = null; } }, { threshold: .35 }).observe(img);
+  }
+})();
 
 // ---------- qual Mac é este ----------
 // Navegador nenhum diz o chip com certeza. O padrão é chip Apple; só troca para Intel
@@ -84,10 +131,14 @@ if (env.intel) {
 // ---------- última versão ----------
 const fmtSize = (b) => `${Math.round(b / 1048576)} MB`;
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+const fmtDateLong = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// Novidades da versão: uma por linha no texto da Release ("- item").
+const notesOf = (body) => String(body || '').split(/\r?\n/).map((l) => l.replace(/^\s*[-*•]\s+/, '').trim()).filter(Boolean);
 
 async function latest() {
   try {
-    const cached = JSON.parse(sessionStorage.getItem('gesfont-latest') || 'null');
+    const cached = JSON.parse(sessionStorage.getItem('gesfont-latest-v2') || 'null');
     if (cached && Date.now() - cached.at < 10 * 60 * 1000) return cached.data;
   } catch (e) {}
   const r = await fetch(API, { headers: { Accept: 'application/vnd.github+json' } });
@@ -98,9 +149,10 @@ async function latest() {
     version: String(j.tag_name || '').replace(/^v/, ''),
     date: j.published_at,
     url: j.html_url,
+    notes: notesOf(j.body),
     assets: (j.assets || []).map((a) => ({ name: a.name, size: a.size, url: a.browser_download_url })),
   };
-  try { sessionStorage.setItem('gesfont-latest', JSON.stringify({ at: Date.now(), data })); } catch (e) {}
+  try { sessionStorage.setItem('gesfont-latest-v2', JSON.stringify({ at: Date.now(), data })); } catch (e) {}
   return data;
 }
 
@@ -121,6 +173,21 @@ latest().then((rel) => {
     $$('[data-version-label]').forEach((el) => { el.textContent = `Versão ${rel.version}, de ${fmtDate(rel.date)}`; });
     $$('[data-version-short]').forEach((el) => { el.textContent = `Versão ${rel.version}, grátis`; });
     $$('[data-releases-latest]').forEach((a) => { a.href = rel.url || LATEST; });
+  }
+
+  // Novidades: só troca o conteúdo fixo da página quando a Release tem texto.
+  if (rel.version && rel.notes && rel.notes.length) {
+    $$('[data-news-title]').forEach((el) => { el.textContent = `Versão ${rel.version}`; });
+    $$('[data-news-date]').forEach((el) => { el.textContent = fmtDateLong(rel.date); });
+    $$('[data-news-list]').forEach((ul) => {
+      ul.replaceChildren(...rel.notes.map((n) => {
+        const li = document.createElement('li');
+        const m = n.match(/^([^:]{2,24}):\s+(.*)$/);
+        if (m) { const b = document.createElement('b'); b.textContent = m[1] + ':'; li.append(b, ' ' + m[2]); }
+        else li.textContent = n;
+        return li;
+      }));
+    });
   }
 }).catch(() => {
   // Sem API (limite de consultas ou sem rede): os botões continuam levando à página da última versão.

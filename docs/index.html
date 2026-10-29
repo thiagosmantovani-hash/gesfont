@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GESFONT · Gestão de fontes para Mac</title>
-  <meta name="description" content="O GESFONT organiza suas fontes por cliente, ativa e desativa sem instalar nada para sempre, encontra duplicadas e testa combinações. Grátis, para Mac com chip Apple ou Intel.">
+  <meta name="description" content="O GESFONT organiza suas fontes por cliente, ativa e desativa sem instalar nada para sempre, encontra duplicadas e testa combinações de título, subtítulo e texto já no formato da arte. Grátis, para Mac com chip Apple ou Intel.">
   <meta name="theme-color" content="#efeee9">
   <meta property="og:type" content="website">
   <meta property="og:title" content="GESFONT · Gestão de fontes para Mac">
@@ -17,6 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bodoni+Moda:wght@700&family=Bricolage+Grotesque:wght@800&family=Fraunces:wght@800&family=Instrument+Serif:ital@1&family=Space+Mono:wght@700&family=Young+Serif&text=fontes&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@800&text=Fraunces&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,7 +29,9 @@
       <span>GESFONT</span>
     </a>
     <nav class="nav" aria-label="Seções">
+      <a href="#combinar">Combinar</a>
       <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#novidades">Novidades</a>
       <a href="#instalar">Como instalar</a>
       <a href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases" data-releases>Versões</a>
     </nav>
@@ -49,7 +52,7 @@
     <h1 aria-label="Suas fontes, no lugar certo.">
       Suas <span class="cycle" id="cycle" aria-hidden="true">fontes</span>,<br>no lugar certo.
     </h1>
-    <p class="lead">O GESFONT reúne a sua biblioteca numa pasta só, organiza tudo por cliente, ativa e desativa fontes sem instalar nada para sempre e mostra o que está repetido. Do jeito que quem trabalha com marca precisa.</p>
+    <p class="lead">O GESFONT reúne a sua biblioteca numa pasta só, organiza tudo por cliente, ativa e desativa fontes sem instalar nada para sempre e testa combinações já no formato da arte. Do jeito que quem trabalha com marca precisa.</p>
 
     <div class="cta">
       <a class="btn btn-lg" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest" data-dl="primary">
@@ -72,12 +75,93 @@
   <div class="wrap wrap-wide">
     <figure class="window window-hero">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/biblioteca-light.webp" width="2000" height="1225" alt="Janela do GESFONT com a lista de todas as fontes, coleções, tags e pastas na barra lateral">
+      <img src="img/biblioteca.webp" width="2000" height="1225" alt="Janela do GESFONT com a lista de todas as fontes, coleções, tags e pastas na barra lateral">
     </figure>
   </div>
 </section>
 
-<section class="features band" id="funcionalidades">
+<section class="combinar band" id="combinar">
+  <div class="wrap">
+    <p class="kicker">Combinar <span class="tag-new">Novo</span></p>
+    <h2 class="section-title">Veja a combinação já com cara de peça pronta.</h2>
+    <p class="section-lead">Título, subtítulo e texto juntos, com as suas fontes, as suas cores e no tamanho real da arte. Do site ao stories, você confere se a dupla funciona antes de mandar para o cliente.</p>
+  </div>
+
+  <div class="wrap wrap-wide">
+    <div class="formats" role="tablist" aria-label="Formatos do Combinar">
+      <button class="format is-on" role="tab" aria-selected="true" aria-controls="combinar-shot" data-format="pagina" data-caption="Fraunces e Instrument Sans, cores Neutro">
+        <span class="format-shape"><i style="width:22px;height:16px"></i></span><span class="format-name">Página</span><span class="format-size">Livre</span>
+      </button>
+      <button class="format" role="tab" aria-selected="false" aria-controls="combinar-shot" data-format="horizontal" data-caption="Bodoni Moda e Manrope, cores Oceano">
+        <span class="format-shape"><i style="width:24px;height:13.5px"></i></span><span class="format-name">Horizontal</span><span class="format-size">1920 × 1080</span>
+      </button>
+      <button class="format" role="tab" aria-selected="false" aria-controls="combinar-shot" data-format="vertical" data-caption="Anton e Space Grotesk, cores Noite">
+        <span class="format-shape"><i style="width:11px;height:20px"></i></span><span class="format-name">Vertical</span><span class="format-size">1080 × 1920</span>
+      </button>
+      <button class="format" role="tab" aria-selected="false" aria-controls="combinar-shot" data-format="retrato" data-caption="Young Serif e DM Sans, cores Areia">
+        <span class="format-shape"><i style="width:15px;height:20px"></i></span><span class="format-name">Retrato</span><span class="format-size">1080 × 1440</span>
+      </button>
+      <button class="format" role="tab" aria-selected="false" aria-controls="combinar-shot" data-format="quadrado" data-caption="Instrument Serif e Epilogue, cores Vinho">
+        <span class="format-shape"><i style="width:18px;height:18px"></i></span><span class="format-name">Quadrado</span><span class="format-size">1080 × 1080</span>
+      </button>
+    </div>
+
+    <figure class="window window-combinar" id="combinar-shot" role="tabpanel" aria-live="polite">
+      <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+      <img id="combinar-img" src="img/combinar-pagina.webp" width="2000" height="1225" alt="Tela Combinar do GESFONT no formato Página, com título em Fraunces e texto em Instrument Sans">
+    </figure>
+    <p class="shot-caption" id="combinar-caption">Fraunces e Instrument Sans, cores Neutro</p>
+  </div>
+
+  <div class="wrap">
+    <ul class="combo-cards">
+      <li class="combo-card">
+        <h3>Cada etapa com a sua fonte.</h3>
+        <p>Título, subtítulo e texto têm caixa de texto, fonte, estilo, tamanho, entrelinha, espaçamento e caixa alta ou baixa próprios. O modelo já vem escrito.</p>
+        <div class="demo-stages" aria-hidden="true">
+          <div class="demo-stage"><span>Título</span><b style="font-family:'Fraunces',Georgia,serif;font-weight:800">Fraunces</b></div>
+          <div class="demo-stage"><span>Subtítulo</span><b style="letter-spacing:.08em;text-transform:uppercase;font-size:12px">Instrument Sans</b></div>
+          <div class="demo-stage"><span>Texto</span><b style="font-weight:500">Instrument Sans</b></div>
+        </div>
+      </li>
+      <li class="combo-card">
+        <h3>Seis paletas prontas.</h3>
+        <p>Neutro, Noite, Areia, Oceano, Floresta e Vinho, ou as cores da marca do cliente pelo código hexadecimal. As cores mudam só as cores, o layout fica igual.</p>
+        <div class="demo-palettes" aria-hidden="true">
+          <span style="--bg:#ffffff;--fg:#000000;--ac:#000000">Aa<i></i></span>
+          <span style="--bg:#000000;--fg:#f7f6f3;--ac:#39ff14">Aa<i></i></span>
+          <span style="--bg:#efe6d8;--fg:#2b2118;--ac:#b4532a">Aa<i></i></span>
+          <span style="--bg:#0f2a3d;--fg:#ffffff;--ac:#f2c14e">Aa<i></i></span>
+          <span style="--bg:#f3f1ea;--fg:#1f3b2d;--ac:#1f3b2d">Aa<i></i></span>
+          <span style="--bg:#2a0f17;--fg:#f6e7df;--ac:#e0a39a">Aa<i></i></span>
+        </div>
+      </li>
+      <li class="combo-card">
+        <h3>Contraste conferido.</h3>
+        <p>Abaixo do layout, o app mede o contraste de cada cor com o fundo e avisa quando alguma fica ruim de ler.</p>
+        <ul class="demo-contrast" aria-hidden="true">
+          <li><i style="background:#2b2118"></i>Título <b>12,7:1</b></li>
+          <li><i style="background:#8a5a33"></i>Subtítulo <b>4,7:1</b></li>
+          <li><i style="background:#4a3b2c"></i>Texto <b>8,7:1</b></li>
+          <li class="is-low"><i style="background:#c9b9a3"></i>Legenda <b>1,6:1</b> <em>ruim de ler</em></li>
+        </ul>
+      </li>
+      <li class="combo-card">
+        <h3>Especificação em um clique.</h3>
+        <p><strong>Copiar especificação</strong> leva fontes, tamanhos, entrelinhas, espaçamentos, caixa e cores em texto, pronto para o cliente ou para a equipe.</p>
+        <pre class="demo-spec" aria-label="Exemplo de especificação copiada">Título: Young Serif, 80 px (160 px na arte)
+Subtítulo: DM Sans, 24 px (48 px na arte)
+Texto: DM Sans, 18 px, entrelinha 1,55
+Formato: Retrato 1080 × 1440 px
+
+Fundo #EFE6D8 · Título #2B2118
+Botão #B4532A com texto #FFFFFF</pre>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="features" id="funcionalidades">
   <div class="wrap">
     <p class="kicker">Funcionalidades</p>
     <h2 class="section-title">Feito para quem escolhe fonte todo dia.</h2>
@@ -95,7 +179,7 @@
     </div>
     <figure class="window">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/grade-light.webp" width="2000" height="1225" alt="Grade de famílias no GESFONT, com um par de letras de cada fonte e o estado de ativação" loading="lazy">
+      <img src="img/grade.webp" width="2000" height="1225" alt="Grade de famílias no GESFONT, com um par de letras de cada fonte e o estado de ativação" loading="lazy">
     </figure>
   </article>
 
@@ -111,7 +195,7 @@
     </div>
     <figure class="window">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/colecao-light.webp" width="2000" height="1225" alt="Coleção de um cliente no GESFONT com três famílias ativas" loading="lazy">
+      <img src="img/colecao.webp" width="2000" height="1225" alt="Coleção de um cliente no GESFONT com três famílias ativas" loading="lazy">
     </figure>
   </article>
 
@@ -127,23 +211,23 @@
     </div>
     <figure class="window">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/glifos-light.webp" width="2000" height="1225" alt="Detalhes da família Fraunces no GESFONT, com a grade de glifos e o painel do caractere selecionado" loading="lazy">
+      <img src="img/glifos.webp" width="2000" height="1225" alt="Detalhes da família Fraunces no GESFONT, com a grade de glifos e o painel do caractere selecionado" loading="lazy">
     </figure>
   </article>
 
   <article class="feature feature-rev wrap wrap-wide">
     <div class="feature-text">
-      <h3>Teste antes de levar ao cliente.</h3>
-      <p>Compare até oito fontes lado a lado com o mesmo texto e combine título e texto em tamanhos reais, com acentos e parágrafos de verdade. Salve as combinações que funcionaram.</p>
+      <h3>Oito fontes, o mesmo texto.</h3>
+      <p>Coloque até oito fontes lado a lado com a mesma frase e escolha o estilo de cada uma. Quando achar a dupla, teste no Combinar com cara de peça pronta.</p>
       <ul>
-        <li>Escolha o estilo de cada fonte na comparação.</li>
-        <li>Ajuste tamanho, entrelinha e fundo claro ou escuro.</li>
+        <li>Vale para a sua biblioteca, as nativas e o Google Fonts.</li>
+        <li>Veja em linhas ou em colunas, no tamanho que quiser.</li>
         <li>Navegue e baixe do Google Fonts sem sair do app.</li>
       </ul>
     </div>
     <figure class="window">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/combinar-light.webp" width="2000" height="1225" alt="Tela Combinar do GESFONT testando um título em Young Serif com texto em DM Sans" loading="lazy">
+      <img src="img/comparar.webp" width="2000" height="1225" alt="Tela Comparar do GESFONT com Fraunces, Bodoni Moda, Instrument Serif e Playfair Display lado a lado" loading="lazy">
     </figure>
   </article>
 
@@ -159,7 +243,7 @@
     </div>
     <figure class="window">
       <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-      <img src="img/duplicadas-light.webp" width="2000" height="1225" alt="Tela Duplicadas do GESFONT com arquivos repetidos agrupados por estilo" loading="lazy">
+      <img src="img/duplicadas.webp" width="2000" height="1225" alt="Tela Duplicadas do GESFONT com arquivos repetidos agrupados por estilo" loading="lazy">
     </figure>
   </article>
 
@@ -167,13 +251,13 @@
     <ul class="extras">
       <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4.5h-4.5"/></svg>
-        <h4>Atualiza sozinho</h4>
-        <p>As versões novas chegam pelo próprio app. Um clique em Reiniciar e atualizar e pronto.</p>
+        <h4>Avisa quando tem versão nova</h4>
+        <p>Um aviso no centro do app mostra as novidades. Você escolhe atualizar agora ou depois.</p>
       </li>
       <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h1M11 10h1M15 10h2M7 14h10"/></svg>
         <h4>Atalhos de teclado</h4>
-        <p>⌘F para buscar, ⌘L e ⌘G para lista e grade, ⌘1 a ⌘6 para trocar de tela.</p>
+        <p>⌘F para buscar, ⌘L e ⌘G para lista e grade, ⌘1 a ⌘7 para trocar de tela.</p>
       </li>
       <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16Z" fill="currentColor"/></svg>
@@ -181,12 +265,22 @@
         <p>Segue o tema do Mac ou fica do jeito que você escolher.</p>
       </li>
       <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6Z"/><path d="m8.8 12.2 2.2 2.2 4.2-4.4"/></svg>
+        <h4>Verificação do sistema</h4>
+        <p>Acha as fontes instaladas por fora e deixa você decidir: manter, mover para a GESFONT ou apagar.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/></svg>
+        <h4>Nativas protegidas</h4>
+        <p>As fontes do macOS ficam com cadeado: dá para ver, comparar e combinar, nunca apagar.</p>
+      </li>
+      <li>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 6v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6M3 6l2-3h14l2 3M9 11h6"/></svg>
         <h4>Na barra de menus</h4>
         <p>Feche a janela e o GESFONT continua ali, pronto para ativar o que faltar.</p>
       </li>
       <li>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 13h6"/></svg>
         <h4>Seus dados no seu Mac</h4>
         <p>Biblioteca, coleções e ajustes ficam num arquivo local. Sem conta, sem nuvem.</p>
       </li>
@@ -201,6 +295,20 @@
 
 <section class="install" id="instalar">
   <div class="wrap">
+    <div class="news" id="novidades">
+      <div class="news-head">
+        <p class="kicker kicker-left">Novidades</p>
+        <h2 data-news-title>Versão 2.5.0</h2>
+        <p class="news-date" data-news-date>29 de outubro de 2026</p>
+        <a class="news-all" href="https://github.com/thiagosmantovani-hash/gesfont-releases/releases" data-releases>Todas as versões</a>
+      </div>
+      <ul class="news-list" data-news-list>
+        <li><b>Combinar:</b> cada etapa do texto (título, subtítulo e texto) tem sua própria caixa de texto, com o modelo pronto.</li>
+        <li><b>Combinar:</b> caixa alta ou baixa, entrelinha e espaçamento entre caracteres em todas as etapas.</li>
+        <li><b>Combinar:</b> as cores voltaram, com seis combinações prontas e cores personalizadas, sem mudar o layout.</li>
+      </ul>
+    </div>
+
     <p class="kicker">Como instalar</p>
     <h2 class="section-title">Três passos, uma vez só.</h2>
     <ol class="steps">
