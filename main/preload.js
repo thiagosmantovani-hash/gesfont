@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('gesfont', {
   checkUpdate: invoke('update:check'),
   installUpdate: invoke('update:install'),
   respondUpdate: invoke('update:respond'),
+  moveToApplications: invoke('app:moveToApplications'),
+  refreshLogin: invoke('app:login'),
   trash: invoke('files:trash'),
   scanSystem: invoke('system:scan'),
   resolveSystem: invoke('system:resolve'),

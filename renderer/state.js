@@ -99,6 +99,8 @@ export async function reload() {
   S.tags = st.tags || {};
   S.systemKept = st.systemKept || {};
   S.systemLocations = st.systemLocations || [];
+  S.placement = st.placement || null;
+  S.login = st.login || { supported: false };
   if (!S.ready) {
     S.previewText = samples()[0] || '';
     S.size = st.settings.previewSize || 48;

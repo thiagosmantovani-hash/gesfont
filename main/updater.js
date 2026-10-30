@@ -31,6 +31,10 @@ let asking = false;      // o aviso de nova versão está aberto
 let dismissed = null;    // versão que o usuário adiou nesta sessão
 let lastInfo = null;
 
+// Ganchos de teste (GESFONT_UPDATE_*): só valem com o app rodando a partir do código, nunca no app instalado.
+const testEnv = (name) => (app.isPackaged ? undefined : process.env[name]);
+const TRUSTED = [`https://github.com/${OWNER}/${REPO}/releases/download/`];
+
 function set(patch) {
   state = { ...state, ...patch };
   if (ctx) ctx.send('update:status', { ...state, manual: manualCheck });
@@ -42,7 +46,7 @@ function status() {
 
 // Caminho do GESFONT.app em execução (no Mac: .../GESFONT.app/Contents/MacOS/GESFONT).
 function appBundlePath() {
-  if (process.env.GESFONT_UPDATE_DEST) return process.env.GESFONT_UPDATE_DEST;
+  if (testEnv('GESFONT_UPDATE_DEST')) return testEnv('GESFONT_UPDATE_DEST');
   return path.resolve(process.execPath, '..', '..', '..');
 }
 
@@ -51,7 +55,7 @@ function run(cmd, args) {
 }
 
 async function detectMode() {
-  if (process.env.GESFONT_UPDATE_MODE) return process.env.GESFONT_UPDATE_MODE;
+  if (testEnv('GESFONT_UPDATE_MODE')) return testEnv('GESFONT_UPDATE_MODE');
   if (process.platform !== 'darwin') return 'squirrel';
   const r = await run('/usr/bin/codesign', ['-dv', '--verbose=2', appBundlePath()]);
   return /Authority=Developer ID Application/.test(r.stderr) ? 'squirrel' : 'swap';
@@ -63,7 +67,7 @@ function manual(message) {
 
 async function init(context) {
   ctx = context;
-  if (!app.isPackaged && !process.env.GESFONT_UPDATE_MODE) { state.phase = 'dev'; return; }
+  if (!app.isPackaged && !testEnv('GESFONT_UPDATE_MODE')) { state.phase = 'dev'; return; }
   try { ({ autoUpdater } = require('electron-updater')); } catch { state.phase = 'unavailable'; return; }
   mode = await detectMode();
 
@@ -71,7 +75,7 @@ async function init(context) {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = mode === 'squirrel';
   autoUpdater.logger = null;
-  if (process.env.GESFONT_UPDATE_FEED) autoUpdater.setFeedURL({ provider: 'generic', url: process.env.GESFONT_UPDATE_FEED });
+  if (testEnv('GESFONT_UPDATE_FEED')) autoUpdater.setFeedURL({ provider: 'generic', url: testEnv('GESFONT_UPDATE_FEED') });
   if (!app.isPackaged) autoUpdater.forceDevUpdateConfig = true; // só em testes com GESFONT_UPDATE_MODE
 
   autoUpdater.on('checking-for-update', () => { if (!downloading && !pending) set({ phase: 'checking', message: null }); });
@@ -169,10 +173,16 @@ function pickZip(info) {
   return zips.find((f) => (arm ? /arm64/i.test(f.url) : !/arm64/i.test(f.url))) || zips[0] || null;
 }
 
+// Endereço do arquivo da versão nova. Só aceita arquivos das Releases do próprio GESFONT.
 function assetUrl(info, file) {
-  if (/^https?:\/\//.test(file.url)) return file.url;
-  const base = process.env.GESFONT_UPDATE_FEED || `https://github.com/${OWNER}/${REPO}/releases/download/v${info.version}`;
-  return `${base.replace(/\/$/, '')}/${encodeURIComponent(file.url)}`;
+  const feed = testEnv('GESFONT_UPDATE_FEED');
+  const version = String(info.version || '');
+  if (!/^\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$/.test(version)) throw new Error('número de versão inválido');
+  const base = (feed || `https://github.com/${OWNER}/${REPO}/releases/download/v${version}`).replace(/\/$/, '');
+  const url = /^https?:\/\//.test(file.url) ? file.url : `${base}/${encodeURIComponent(file.url)}`;
+  const trusted = feed ? [base + '/'] : TRUSTED;
+  if (!trusted.some((t) => url.startsWith(t))) throw new Error('endereço de download fora das Releases do GESFONT');
+  return url;
 }
 
 async function download(url, dest, size) {
@@ -214,8 +224,9 @@ async function swapDownload(info) {
     await fsp.rm(work, { recursive: true, force: true });
     await fsp.mkdir(work, { recursive: true });
     const zip = path.join(work, 'GESFONT.zip');
+    if (!file.sha512) throw new Error('a versão publicada não informa a soma de verificação');
     const sha = await download(assetUrl(info, file), zip, file.size);
-    if (file.sha512 && sha !== file.sha512) throw new Error('O arquivo baixado não confere com a versão publicada.');
+    if (sha !== file.sha512) throw new Error('O arquivo baixado não confere com a versão publicada.');
     const outDir = path.join(work, 'app');
     await fsp.mkdir(outDir);
     const r = process.platform === 'darwin' ? await run('/usr/bin/ditto', ['-x', '-k', zip, outDir]) : await run('unzip', ['-q', zip, '-d', outDir]);

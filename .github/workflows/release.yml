@@ -60,16 +60,49 @@ jobs:
         if: steps.versao.outputs.publicar == 'sim'
         run: npm ci
 
-      - name: Gerar e publicar v${{ steps.versao.outputs.versao }}
+      - name: Gerar instaladores v${{ steps.versao.outputs.versao }}
         if: steps.versao.outputs.publicar == 'sim'
-        run: npx electron-builder --mac --publish always
+        run: npx electron-builder --mac --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
-      - name: Publicar as novidades na página da versão
-        if: steps.versao.outputs.publicar == 'sim' && hashFiles('build/release-notes.md') != ''
-        run: gh release edit "v${{ steps.versao.outputs.versao }}" --notes-file build/release-notes.md
+      # Nada é publicado se uma destas conferências falhar: os apps instalados só recebem
+      # versões que abrem e cujo instalador mostra a pasta Aplicativos.
+      - name: Conferir instalador e app antes de publicar
+        if: steps.versao.outputs.publicar == 'sim'
+        run: |
+          set -euo pipefail
+          V=${{ steps.versao.outputs.versao }}
+          ls -la dist
+          test -f dist/latest-mac.yml
+          shopt -s nullglob
+          DMGS=(dist/*.dmg); [ ${#DMGS[@]} -eq 2 ] || { echo "::error::Esperava 2 instaladores .dmg"; exit 1; }
+          for DMG in "${DMGS[@]}"; do
+            MNT=$(mktemp -d)
+            hdiutil attach -nobrowse -readonly -mountpoint "$MNT" "$DMG" >/dev/null
+            echo "== $DMG"; ls -la "$MNT"
+            test -L "$MNT/Applications" || { echo "::error::$DMG sem o atalho para Aplicativos"; hdiutil detach "$MNT"; exit 1; }
+            test -f "$MNT/.DS_Store" || { echo "::error::$DMG sem o layout da janela"; hdiutil detach "$MNT"; exit 1; }
+            test -d "$MNT/GESFONT.app"
+            codesign --verify --deep --strict "$MNT/GESFONT.app"
+            test -f "$MNT/GESFONT.app/Contents/Resources/app-update.yml"
+            hdiutil detach "$MNT" >/dev/null
+          done
+          # o Mac do GitHub é Intel: abre a versão Intel e confere se a interface carrega
+          APP=$(ls -d dist/mac/GESFONT.app)
+          npx @electron/fuses read --app "$APP" || true
+          "$APP/Contents/MacOS/GESFONT" --selftest
+
+      - name: Publicar v${{ steps.versao.outputs.versao }} nas Releases
+        if: steps.versao.outputs.publicar == 'sim'
+        run: |
+          set -euo pipefail
+          V=${{ steps.versao.outputs.versao }}
+          NOTES=build/release-notes.md; [ -f "$NOTES" ] || { echo "GESFONT $V" > /tmp/notes.md; NOTES=/tmp/notes.md; }
+          shopt -s nullglob
+          FILES=(dist/*.dmg dist/*.zip dist/*.blockmap dist/latest-mac.yml)
+          [ ${#FILES[@]} -ge 5 ] || { echo "::error::Faltam arquivos para publicar"; exit 1; }
+          gh release create "v$V" --title "$V" --target "$GITHUB_SHA" --notes-file "$NOTES" --latest "${FILES[@]}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

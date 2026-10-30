@@ -132,11 +132,67 @@ function reviewNav() {
     icon('shield'), h('span', { class: 'nav-label' }, 'Verificação'), pending ? h('span', { class: 'nav-pill', title: `${pending} aguardando decisão` }, fmt.int(pending)) : null);
 }
 
+// ---------- aviso para mover o app para Aplicativos ----------
+// Aparece quando o GESFONT foi aberto direto do instalador (.dmg) ou da pasta Downloads.
+// Fora de Aplicativos ele não consegue se atualizar sozinho nem abrir junto com o Mac.
+let moveOpen = false;
+let queuedUpdate = null;
+
+function trapFocus(root, e) {
+  const f = [...root.querySelectorAll('button:not([disabled])')];
+  if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+}
+
+function showMovePrompt() {
+  const pl = S.placement || {};
+  const root = document.getElementById('update-root');
+  const close = () => {
+    root.hidden = true; root.innerHTML = ''; moveOpen = false;
+    document.removeEventListener('keydown', onKey, true);
+    if (queuedUpdate) { const q = queuedUpdate; queuedUpdate = null; showUpdatePrompt(q); }
+  };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    if (e.key === 'Tab') trapFocus(root, e);
+  };
+  const where = pl.dmg ? 'direto do instalador (.dmg)' : pl.translocated ? 'de uma pasta temporária do macOS' : 'fora da pasta Aplicativos';
+  const msg = h('p', { class: 'upd-status', hidden: true });
+  const actions = h('div', { class: 'upd-actions' });
+  const card = h('div', { class: 'upd-card', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'mv-title', 'aria-describedby': 'mv-desc' },
+    h('button', { class: 'icon-btn upd-close', title: 'Fechar', 'aria-label': 'Fechar', onClick: close }, icon('x')),
+    brandMark(44),
+    h('p', { class: 'upd-kicker' }, 'Instalação'),
+    h('h2', { id: 'mv-title', class: 'upd-title' }, 'Mover para Aplicativos?'),
+    h('p', { id: 'mv-desc', class: 'upd-desc' }, `O GESFONT está aberto ${where}. Na pasta Aplicativos ele se atualiza sozinho e pode abrir junto com o Mac. O app é copiado para lá e abre de novo em seguida. Suas fontes e ajustes continuam iguais.`),
+    msg, actions,
+    h('button', { class: 'link upd-skip', onClick: () => { saveSettings({ skipMovePrompt: true }); close(); } }, 'Não perguntar de novo'));
+  actions.append(
+    h('button', { class: 'btn', onClick: close }, 'Agora não'),
+    h('button', { class: 'btn btn-primary', onClick: async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      msg.hidden = false; msg.textContent = 'Copiando para Aplicativos…';
+      const r = await api.moveToApplications();
+      if (r && r.ok) { msg.textContent = 'Pronto. Abrindo o GESFONT a partir de Aplicativos.'; return; }
+      btn.disabled = false;
+      msg.textContent = `${(r && r.message) || 'Não foi possível mover.'} Arraste o GESFONT para a pasta Aplicativos pelo Finder e abra de lá.`;
+    } }, 'Mover para Aplicativos'));
+  root.innerHTML = '';
+  root.append(h('div', { class: 'upd-backdrop' }), card);
+  root.hidden = false;
+  moveOpen = true;
+  document.addEventListener('keydown', onKey, true);
+  setTimeout(() => actions.querySelector('.btn-primary')?.focus(), 30);
+}
+
 // ---------- aviso de nova versão ----------
 // Fica no centro do app e bloqueia o uso até a pessoa fechar ou atualizar.
 let updateOpen = null;
 
 function showUpdatePrompt(p) {
+  if (moveOpen) { queuedUpdate = p; return; }
   const root = document.getElementById('update-root');
   const notes = (p.notes || '').split('\n').map((l) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
   const close = () => { root.hidden = true; root.innerHTML = ''; updateOpen = null; document.removeEventListener('keydown', onKey, true); };
@@ -285,4 +341,5 @@ window.addEventListener('keydown', (e) => {
   drawSidebar();
   mountView();
   emit('init');
+  if (S.placement && S.placement.packaged && !S.placement.ok && !S.settings.skipMovePrompt) showMovePrompt();
 })();

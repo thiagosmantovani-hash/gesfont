@@ -47,8 +47,17 @@ export function mountSettings(root) {
 
       section('Comportamento do app', null,
         sw('hideToTray', mac ? 'Manter na barra de menus ao fechar' : 'Manter na bandeja ao fechar', 'Fechar a janela deixa o GESFONT rodando, com um ícone para abrir de novo e desativar fontes.'),
-        linux ? null : sw('openAtLogin', 'Iniciar com o sistema'),
+        linux ? null : row('Iniciar com o sistema', toggle(S.settings.openAtLogin ? 'on' : 'off', async () => {
+          saveSettings({ openAtLogin: !S.settings.openAtLogin });
+          S.login = await api.refreshLogin();
+          if (S.settings.openAtLogin && S.login && S.login.ok === false) toast(S.login.message, 'error');
+          draw();
+        }, 'Iniciar com o sistema'), loginText()),
         linux ? null : sw('startHidden', 'Iniciar oculto', 'Ao iniciar com o sistema, abre só o ícone, sem a janela.'),
+        mac && S.placement && S.placement.packaged && !S.placement.ok
+          ? row('Mover para Aplicativos', h('button', { class: 'btn', onClick: async () => { const r = await api.moveToApplications(); if (!r || !r.ok) toast(`${(r && r.message) || 'Não foi possível mover.'} Arraste o GESFONT para Aplicativos pelo Finder.`, 'error'); } }, 'Mover'),
+            'O GESFONT está fora da pasta Aplicativos. Lá ele se atualiza sozinho e abre junto com o Mac.')
+          : null,
         sw('deactivateOnQuit', 'Desativar todas as fontes ao sair', 'Mantém o sistema leve: cada projeto ativa só o que precisa.')),
 
       section('Aparência', null,
@@ -74,6 +83,13 @@ export function mountSettings(root) {
         row('Fontes ativas agora', h('button', { class: 'btn', disabled: !S.activated.size, onClick: async () => { await api.deactivateAll(); await reload(); toast('Todas as fontes foram desativadas'); draw(); } }, 'Desativar todas'),
           fmt.plural(S.activated.size, 'arquivo ativado pelo GESFONT', 'arquivos ativados pelo GESFONT')),
         row('Fontes do sistema', h('button', { class: 'btn', onClick: () => api.scanSystem() }, 'Ler novamente'), 'Leia de novo se instalou fontes por fora do GESFONT.')));
+  }
+
+  function loginText() {
+    const l = S.login || {};
+    if (!S.settings.openAtLogin) return S.platform === 'darwin' ? 'O GESFONT abre sozinho quando você entra no Mac.' : 'O GESFONT abre sozinho quando você entra no computador.';
+    if (l.ok === false) return l.message || 'Não foi possível ativar.';
+    return S.platform === 'darwin' ? 'Ligado. Aparece em Ajustes do Sistema > Geral > Itens de Início como GESFONT.' : 'Ligado.';
   }
 
   function updateText() {

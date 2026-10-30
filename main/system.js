@@ -46,7 +46,12 @@ function locations() {
   ];
 }
 
-const inside = (file, dir) => file === dir || file.startsWith(dir + path.sep);
+// Compara caminhos já normalizados: "/Library/Fonts/../../etc" não passa por "/Library/Fonts".
+const inside = (file, dir) => {
+  const f = path.resolve(String(file));
+  const d = path.resolve(String(dir));
+  return f === d || f.startsWith(d + path.sep);
+};
 
 function locationOf(file) {
   // a pasta mais específica vence (ex.: AssetsV2 dentro de /System)
@@ -69,6 +74,8 @@ function installedDirs() {
 }
 
 // ---------- aplicar decisões da verificação ----------
+const ACTIONS = new Set(['keep', 'move', 'move-active', 'trash']);
+const FONT_EXT = /\.(ttf|otf|ttc|otc|dfont|woff2?|pfb|pfm|afm)$/i;
 const q = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
 function uniqueDest(dir, file) {
@@ -91,11 +98,12 @@ async function moveFile(src, dest) {
 function runAsAdmin(lines) {
   return new Promise((resolve) => {
     if (platform !== 'darwin' || !lines.length) return resolve({ ok: false, message: 'Precisa de permissão de administrador.' });
-    const script = path.join(os.tmpdir(), `gesfont-admin-${Date.now()}.sh`);
-    fs.writeFileSync(script, `#!/bin/bash\n${lines.join('\n')}\n`, { mode: 0o755 });
-    const apple = `do shell script "/bin/bash ${script.replace(/"/g, '\\"')}" with administrator privileges with prompt "O GESFONT precisa da sua senha para mexer em fontes instaladas para todos os usuários."`;
+    // Os comandos vão direto no pedido de senha, sem arquivo intermediário que outro programa
+    // pudesse trocar antes de rodar como administrador.
+    const shellCmd = lines.join(' ; ');
+    const asString = (t) => `"${t.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    const apple = `do shell script ${asString(shellCmd)} with administrator privileges with prompt "O GESFONT precisa da sua senha para mexer em fontes instaladas para todos os usuários."`;
     execFile('/usr/bin/osascript', ['-e', apple], (err, _o, stderr) => {
-      try { fs.unlinkSync(script); } catch {}
       if (err) resolve({ ok: false, message: /-128|cancel/i.test(String(stderr)) ? 'Você cancelou o pedido de senha.' : 'Não foi possível obter permissão de administrador.' });
       else resolve({ ok: true });
     });
@@ -113,7 +121,10 @@ async function resolve(items, moveDir, trashItem) {
   const needAdmin = [];
   await fsp.mkdir(moveDir, { recursive: true });
   const trashDir = path.join(home, '.Trash');
-  for (const it of items) {
+  for (const raw of items) {
+    if (!raw || typeof raw.path !== 'string' || !ACTIONS.has(raw.action)) continue;
+    const it = { path: path.resolve(raw.path), action: raw.action };
+    if (!FONT_EXT.test(it.path)) { out.failed.push({ path: it.path, message: 'Não é um arquivo de fonte.' }); continue; }
     const loc = locationOf(it.path);
     if (!loc || loc.kind === 'native') { out.failed.push({ path: it.path, message: 'Fonte nativa do sistema, não pode ser alterada.' }); continue; }
     if (it.action === 'keep') { out.kept.push(it.path); continue; }

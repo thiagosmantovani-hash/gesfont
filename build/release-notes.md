@@ -1,3 +1,5 @@
-- Combinar: cada etapa do texto (título, subtítulo e texto) tem sua própria caixa de texto, com o modelo pronto.
-- Combinar: caixa alta ou baixa, entrelinha e espaçamento entre caracteres em todas as etapas.
-- Combinar: as cores voltaram, com seis combinações prontas e cores personalizadas, sem mudar o layout.
+- Instalador: a janela do .dmg voltou a mostrar o atalho da pasta Aplicativos. Arraste o GESFONT para lá.
+- Instalador: aberto direto do .dmg ou de Downloads, o app oferece mover para Aplicativos e se reabre de lá.
+- Iniciar com o sistema: voltou a funcionar no Mac e continua valendo depois de cada atualização. Os Ajustes mostram se está ligado.
+- Segurança: Electron 45 e dependências atualizadas, travas de segurança do Electron ligadas e conferências extras em tudo que mexe em arquivos.
+- Publicação: cada versão só sai depois de o instalador e o app passarem por uma conferência automática.

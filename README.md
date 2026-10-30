@@ -9,14 +9,15 @@ Gestão de fontes para Mac (também roda em Windows e Linux). Organiza a bibliot
 1. Abra a [última versão](https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest) e baixe o `.dmg`:
    - `GESFONT-x.y.z-arm64.dmg` para Macs com chip Apple (M1 em diante);
    - `GESFONT-x.y.z.dmg` para Macs Intel.
-2. Abra o `.dmg` e arraste o GESFONT para **Aplicativos**. Ele precisa ficar em Aplicativos para conseguir se atualizar sozinho.
+   Precisa do macOS 12 (Monterey) ou mais novo.
+2. Abra o `.dmg`. A janela mostra o GESFONT e o atalho da pasta **Aplicativos**: arraste um para o outro. Ele precisa ficar em Aplicativos para conseguir se atualizar sozinho e abrir junto com o Mac. Se você abrir o app direto do `.dmg` ou de Downloads, ele oferece **Mover para Aplicativos** e se reabre de lá.
 3. Na primeira abertura, o macOS avisa que não pôde verificar o desenvolvedor, porque o app não tem certificado pago da Apple. Clique em **OK**, vá em Ajustes do Sistema > Privacidade e Segurança e clique em **Abrir mesmo assim**. Isso só acontece uma vez.
 
 Depois disso, as versões novas chegam sozinhas (veja Atualizações automáticas).
 
 ## Rodar a partir do código
 
-Para testar mudanças no código antes de publicar, com Node.js 20 ou mais novo:
+Para testar mudanças no código antes de publicar, com Node.js 22 ou mais novo:
 
 ```
 npm install
@@ -77,7 +78,7 @@ O motor de atualização é o `electron-updater`, o equivalente ao Sparkle para 
 
 ### Publicar uma versão nova
 
-A automação `.github/workflows/release.yml` gera os instaladores num Mac do GitHub (chip Apple e Intel) e publica a Release com o arquivo `latest-mac.yml`, que é o que os apps instalados consultam.
+A automação `.github/workflows/release.yml` gera os instaladores num Mac do GitHub (chip Apple e Intel), confere tudo e só então publica a Release com o arquivo `latest-mac.yml`, que é o que os apps instalados consultam. A conferência abre cada `.dmg` e exige o atalho para Aplicativos e o layout da janela, valida a assinatura e abre o app em modo de teste (`--selftest`) para ver se a interface carrega. Se algo falhar, nada é publicado e os apps instalados não recebem a versão.
 
 1. Faça as mudanças no código e aumente `"version"` no `package.json` (por exemplo, de 2.1.0 para 2.1.1). Os apps só atualizam para um número maior que o instalado.
 2. Escreva as novidades em `build/release-notes.md`, uma por linha. Elas aparecem na página da versão e no aviso que o app mostra antes de atualizar.
@@ -88,7 +89,7 @@ Para acompanhar ou rodar de novo à mão: aba **Actions** > **Publicar versão**
 
 ### Se um dia tiver o certificado da Apple
 
-Com o Apple Developer Program (US$ 99 por ano) o app passa a abrir sem o aviso de desenvolvedor e usa o atualizador padrão. Para ativar: apague `"identity": null` do `package.json` e crie em Settings > Secrets and variables > Actions os segredos `CSC_LINK` (certificado .p12 em base64), `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` e `APPLE_TEAM_ID`, repassando-os no passo "Gerar e publicar" da automação.
+Com o Apple Developer Program (US$ 99 por ano) o app passa a abrir sem o aviso de desenvolvedor e usa o atualizador padrão. Para ativar: apague `"identity": null` do `package.json` e crie em Settings > Secrets and variables > Actions os segredos `CSC_LINK` (certificado .p12 em base64), `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` e `APPLE_TEAM_ID`, repassando-os no passo "Gerar instaladores" da automação.
 
 ## Ajustes
 
@@ -97,7 +98,7 @@ A engrenagem no rodapé da barra lateral abre os ajustes:
 - **Pasta principal:** onde fica e como trocar.
 - **Exibição das fontes:** tamanho padrão da prévia, velocidade de rolagem, agrupar ou não em famílias, restaurar nomes originais.
 - **Textos de exemplo:** um por linha. A primeira linha é o texto padrão das prévias.
-- **Comportamento do app:** manter na barra de menus ao fechar, iniciar com o sistema, iniciar oculto e desativar todas as fontes ao sair.
+- **Comportamento do app:** manter na barra de menus ao fechar, iniciar com o sistema (mostra se está funcionando), iniciar oculto, mover para Aplicativos (quando o app está fora de lá) e desativar todas as fontes ao sair.
 - **Aparência:** automático, claro ou escuro.
 - **Coleções:** importar e exportar.
 - **Tags:** ocultar tags automáticas ou do Google Fonts.
@@ -120,6 +121,19 @@ A engrenagem no rodapé da barra lateral abre os ajustes:
 | Cmd+, | Ajustes |
 | Esc | Voltar dos detalhes |
 
+## Abrir junto com o Mac
+
+Com **Iniciar com o sistema** ligado, o GESFONT grava o item de início `~/Library/LaunchAgents/com.thiagomantovani.gesfont.login.plist`, que abre `/Applications/GESFONT.app` quando você entra no Mac. Ele aparece em Ajustes do Sistema > Geral > Itens de Início como GESFONT. O app confere e regrava esse item toda vez que abre, então ele continua valendo depois de cada atualização. Até a versão 2.5 o app usava o registro padrão do Electron, que dependia da assinatura do app e parava de funcionar a cada versão nova de um app sem certificado da Apple. Para funcionar, o GESFONT precisa estar em Aplicativos.
+
+## Segurança
+
+- A interface roda isolada (`contextIsolation`, `sandbox`, sem Node), com política de conteúdo restrita, sem navegação, sem janelas novas e sem permissões de câmera, microfone ou localização.
+- Tudo que a interface pede ao sistema passa por conferência: caminhos são normalizados antes de comparar, só arquivos da biblioteca vão para a Lixeira, só pastas conhecidas abrem no Finder, nomes de pasta não podem sair da pasta GESFONT.
+- A Verificação do sistema só mexe em fontes fora das pastas nativas. Quando precisa da senha de administrador, os comandos vão direto no pedido de senha, sem arquivo intermediário.
+- As atualizações só são baixadas das Releases deste repositório e só são instaladas se o SHA-512 do arquivo bater com o publicado.
+- O app sai com as travas de segurança do Electron (fuses): não roda como Node, ignora `NODE_OPTIONS` e depuração por linha de comando, só carrega o código empacotado e confere a integridade dele.
+- Os ganchos de teste (`GESFONT_DATA`, `GESFONT_UPDATE_*`) só valem rodando a partir do código, nunca no app instalado.
+
 ## Onde ficam os dados
 
 A biblioteca, as coleções, as tags, os nomes de família alterados e os ajustes ficam em `~/Library/Application Support/GESFONT/gesfont.json`. As fontes ficam na pasta GESFONT e nas pastas que você adicionou.
@@ -130,6 +144,7 @@ A biblioteca, as coleções, as tags, os nomes de família alterados e os ajuste
 main/            processo principal (Node)
   main.js        janela, menu, pasta principal e subpastas, Lixeira, barra de menus, comunicação com a interface
   updater.js     atualizações automáticas (electron-updater e instalador próprio para Mac)
+  launch.js      mover para Aplicativos e abrir junto com o sistema
   system.js      fontes do sistema: nativas, instaladas e as decisões da Verificação
   scanner.js     leitura das pastas e dos metadados das fontes (fontkit)
   activator.js   ativação e desativação por sistema operacional
@@ -147,5 +162,6 @@ renderer/        interface (HTML, CSS e JavaScript sem build)
 docs/                  site de download (GitHub Pages), lê a última Release pela API
 build/icon.png         ícone do app
 build/adhoc-sign.js    assinatura ad-hoc do app no Mac
+build/background*.png  fundo da janela do instalador (.dmg)
 .github/workflows/     automação que gera e publica as versões
 ```

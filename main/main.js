@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, nativeTheme, session } = require('electron');
 const fs = require('fs');
 const fsp = fs.promises;
 const os = require('os');
@@ -12,6 +12,7 @@ const google = require('./google');
 const { extractFromCollection } = require('./ttc');
 const updater = require('./updater');
 const system = require('./system');
+const launch = require('./launch');
 
 const isMac = process.platform === 'darwin';
 let win = null;
@@ -19,12 +20,21 @@ let tray = null;
 let store = null;
 let quitting = false;
 const watchers = new Map();
+let loginStatus = { supported: false };
 
 const dataDir = () => app.getPath('userData');
 const defaultRoot = () => path.join(os.homedir(), 'GESFONT');
 const rootDir = () => store.data.settings.rootDir || defaultRoot();
 const googleDir = () => path.join(rootDir(), 'Google Fonts');
-const inside = (file, dir) => file === dir || file.startsWith(dir + path.sep);
+// Caminhos sempre normalizados antes de comparar ("pasta/../outra" não passa como "pasta").
+const inside = (file, dir) => {
+  if (typeof file !== 'string' || typeof dir !== 'string') return false;
+  const f = path.resolve(file);
+  const d = path.resolve(dir);
+  return f === d || f.startsWith(d + path.sep);
+};
+const isStr = (v) => typeof v === 'string' && v.length > 0 && v.length < 4096;
+const strList = (v) => (Array.isArray(v) ? v.filter(isStr).map((p) => path.resolve(p)) : []);
 
 function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
@@ -70,6 +80,8 @@ function publicState() {
     sep: path.sep,
     version: app.getVersion(),
     update: updater.status(),
+    login: loginStatus,
+    placement: !app.isPackaged && process.env.GESFONT_TEST_PLACEMENT ? { ok: false, packaged: true, dmg: true } : launch.placement(),
   };
 }
 
@@ -329,7 +341,8 @@ async function trashFiles(paths) {
   const failed = [];
   for (const p of new Set(paths)) {
     const info = d.fileIndex[p];
-    if (!info || info.source === 'system') { failed.push({ path: p, message: 'Fontes do sistema não podem ser apagadas pelo app.' }); continue; }
+    if (!info) { failed.push({ path: p, message: 'Arquivo fora da biblioteca do GESFONT.' }); continue; }
+    if (info.source === 'system') { failed.push({ path: p, message: 'Fontes do sistema não podem ser apagadas pelo app.' }); continue; }
     try {
       if (d.activated[p]) await activator.deactivateFile(store, p);
       if (fs.existsSync(p)) await shell.trashItem(p);
@@ -345,7 +358,10 @@ async function trashFiles(paths) {
 }
 
 // ---------- pastas dentro da pasta principal ----------
-const safeName = (n) => String(n).replace(/[\\/:*?"<>|]/g, '-').trim().slice(0, 120);
+const safeName = (n) => {
+  const name = String(n ?? '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim().slice(0, 120);
+  return /^\.+$/.test(name) ? '' : name; // "." e ".." sairiam da pasta
+};
 
 // Atualiza índice, ativação e nomes de família quando arquivos mudam de lugar.
 async function relocate(pairs) {
@@ -370,7 +386,7 @@ async function relocate(pairs) {
 }
 
 async function makeFolder(parent, name) {
-  parent = parent && inside(parent, rootDir()) ? parent : rootDir();
+  parent = parent && inside(parent, rootDir()) ? path.resolve(parent) : rootDir();
   const base = safeName(name) || 'Nova pasta';
   let dir = path.join(parent, base);
   let n = 2;
@@ -382,7 +398,10 @@ async function makeFolder(parent, name) {
 
 async function renameFolder(dir, name) {
   if (!inside(dir, rootDir()) || dir === rootDir()) throw new Error('Só é possível renomear pastas dentro da pasta GESFONT.');
-  const to = path.join(path.dirname(dir), safeName(name));
+  dir = path.resolve(dir);
+  const clean = safeName(name);
+  if (!clean) throw new Error('Escolha um nome para a pasta.');
+  const to = path.join(path.dirname(dir), clean);
   if (to === dir) return dir;
   if (fs.existsSync(to)) throw new Error('Já existe uma pasta com esse nome.');
   unwatch(rootDir());
@@ -395,6 +414,7 @@ async function renameFolder(dir, name) {
 }
 
 async function trashFolder(dir) {
+  dir = path.resolve(String(dir));
   if (!inside(dir, rootDir()) || dir === rootDir()) throw new Error('Só é possível apagar pastas dentro da pasta GESFONT.');
   for (const file of Object.keys(store.data.activated)) if (inside(file, dir)) await activator.deactivateFile(store, file);
   await shell.trashItem(dir);
@@ -467,14 +487,18 @@ function syncTray() {
 }
 
 function applyLoginItem() {
-  const s = store.data.settings;
-  if (process.platform === 'linux') return;
-  try { app.setLoginItemSettings({ openAtLogin: !!s.openAtLogin, openAsHidden: !!s.startHidden, args: s.startHidden ? ['--hidden'] : [] }); } catch {}
+  const before = store.data.settings.loginPrefVersion;
+  loginStatus = launch.applyLogin(store.data.settings);
+  if (before !== store.data.settings.loginPrefVersion) store.save();
+  return loginStatus;
 }
 
-function openedAtLogin() {
-  if (process.argv.includes('--hidden')) return true;
-  try { return isMac && app.getLoginItemSettings().wasOpenedAtLogin; } catch { return false; }
+// Pastas que o app pode abrir no Finder: a pasta principal, as pastas do usuário e a de ativação.
+function canOpenDir(p) {
+  if (!isStr(p)) return false;
+  const dir = path.resolve(p);
+  try { if (!fs.statSync(dir).isDirectory()) return false; } catch { return false; }
+  return [rootDir(), activator.targetDir(), ...store.data.folders].some((d) => inside(dir, d));
 }
 
 // ---------- IPC ----------
@@ -499,7 +523,7 @@ function registerIpc() {
     return rootDir();
   });
   ipcMain.handle('root:open', async () => { await ensureRoot(); shell.openPath(rootDir()); });
-  ipcMain.handle('files:import', (_e, paths) => importPaths(paths));
+  ipcMain.handle('files:import', (_e, paths) => importPaths(strList(paths)));
   ipcMain.handle('files:choose', async () => {
     const r = await dialog.showOpenDialog(win, {
       title: 'Importar fontes para a pasta GESFONT', properties: ['openFile', 'multiSelections'],
@@ -508,18 +532,22 @@ function registerIpc() {
     if (r.canceled) return null;
     return importPaths(r.filePaths);
   });
-  ipcMain.handle('files:info', (_e, paths) => fileInfo(paths));
+  ipcMain.handle('files:info', (_e, paths) => fileInfo(strList(paths).filter((p) => store.data.fileIndex[p])));
   ipcMain.handle('rootfs:mkdir', (_e, parent, name) => makeFolder(parent, name));
   ipcMain.handle('rootfs:rename', async (_e, dir, name) => { try { return { ok: true, path: await renameFolder(dir, name) }; } catch (e) { return { ok: false, message: e.message }; } });
   ipcMain.handle('rootfs:trash', async (_e, dir) => { try { await trashFolder(dir); return { ok: true }; } catch (e) { return { ok: false, message: e.message }; } });
-  ipcMain.handle('rootfs:move', async (_e, paths, dest) => { try { return { ok: true, ...(await moveInto(paths, dest)) }; } catch (e) { return { ok: false, message: e.message }; } });
+  ipcMain.handle('rootfs:move', async (_e, paths, dest) => { try { return { ok: true, ...(await moveInto(strList(paths).filter((p) => scanner.isFontFile(p)), path.resolve(String(dest)))) }; } catch (e) { return { ok: false, message: e.message }; } });
   ipcMain.handle('update:check', () => updater.check(true));
   ipcMain.handle('update:install', () => updater.install());
   ipcMain.handle('update:respond', (_e, answer) => updater.respond(answer));
-  ipcMain.handle('files:trash', (_e, paths) => trashFiles(paths));
+  ipcMain.handle('files:trash', (_e, paths) => trashFiles(strList(paths)));
   ipcMain.handle('system:scan', () => scanSystem());
-  ipcMain.handle('system:resolve', (_e, items) => resolveSystem(items));
-  ipcMain.handle('system:unkeep', (_e, paths) => { for (const p of paths) delete store.data.systemKept[p]; changed(); });
+  ipcMain.handle('system:resolve', (_e, items) => resolveSystem((Array.isArray(items) ? items : [])
+    .filter((it) => it && isStr(it.path) && store.data.fileIndex[path.resolve(it.path)]?.source === 'system')
+    .map((it) => ({ path: path.resolve(it.path), action: it.action }))));
+  ipcMain.handle('system:unkeep', (_e, paths) => { for (const p of strList(paths)) delete store.data.systemKept[p]; changed(); });
+  ipcMain.handle('app:moveToApplications', () => launch.moveToApplications());
+  ipcMain.handle('app:login', () => applyLoginItem());
 
   ipcMain.handle('font:data', async (_e, id) => {
     const f = store.data.faces[id];
@@ -568,11 +596,12 @@ function registerIpc() {
   ipcMain.handle('data:save', (_e, key, value) => {
     if (!['collections', 'favorites', 'pairs', 'settings', 'overrides', 'tags'].includes(key)) return;
     const prev = store.data.settings;
-    if (key === 'settings') value = { ...value, rootDir: prev.rootDir, systemScanned: prev.systemScanned, updatePrefVersion: prev.updatePrefVersion };
+    if (value === null || typeof value !== 'object') return;
+    if (key === 'settings') value = { ...value, rootDir: prev.rootDir, systemScanned: prev.systemScanned, updatePrefVersion: prev.updatePrefVersion, loginPrefVersion: prev.loginPrefVersion };
     store.data[key] = value;
     if (key === 'settings') {
       nativeTheme.themeSource = value.theme || 'system';
-      if (prev.openAtLogin !== value.openAtLogin || prev.startHidden !== value.startHidden) applyLoginItem();
+      if (prev.openAtLogin !== value.openAtLogin) applyLoginItem();
       syncTray();
     }
     store.save();
@@ -589,8 +618,9 @@ function registerIpc() {
     return { ids };
   });
 
-  ipcMain.handle('shell:reveal', (_e, p) => shell.showItemInFolder(p));
-  ipcMain.handle('shell:openPath', (_e, p) => shell.openPath(p));
+  ipcMain.handle('shell:reveal', (_e, p) => { if (isStr(p) && fs.existsSync(p)) shell.showItemInFolder(path.resolve(p)); });
+  // Só abre pastas conhecidas: abrir um arquivo qualquer poderia executar um programa.
+  ipcMain.handle('shell:openPath', (_e, p) => (canOpenDir(p) ? shell.openPath(path.resolve(p)) : 'Pasta não permitida'));
   ipcMain.handle('shell:open', (_e, url) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
   });
@@ -679,6 +709,7 @@ function createWindow(visible = true) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webSecurity: true,
       spellcheck: false,
     },
   });
@@ -696,10 +727,16 @@ function createWindow(visible = true) {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.on('will-attach-webview', (e) => e.preventDefault());
 }
 
 app.setName('GESFONT');
-if (process.env.GESFONT_DATA) app.setPath('userData', process.env.GESFONT_DATA);
+// Teste rápido usado na publicação: abre o app numa pasta de dados temporária, confere se a
+// interface carregou e fecha. Não mexe em ajustes, itens de início nem atualizações.
+const SELFTEST = process.argv.includes('--selftest');
+if (SELFTEST) app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'gesfont-selftest-')));
+// Pasta de dados separada só para testes com o app rodando a partir do código.
+if (!app.isPackaged && process.env.GESFONT_DATA) app.setPath('userData', process.env.GESFONT_DATA);
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -714,10 +751,17 @@ if (!app.requestSingleInstanceLock()) {
     await ensureRoot();
     registerIpc();
     buildMenu();
-    const hidden = store.data.settings.startHidden && openedAtLogin();
+    // Nada de câmera, microfone, localização ou notificações pedidos pela página: só copiar texto.
+    const allowed = new Set(['clipboard-sanitized-write']);
+    session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(allowed.has(perm)));
+    session.defaultSession.setPermissionCheckHandler((_wc, perm) => allowed.has(perm));
+    // Reaplica o item de início a cada abertura: corrige caminhos antigos e o registro da 2.5.
+    if (!SELFTEST) applyLoginItem();
+    const hidden = store.data.settings.startHidden && launch.openedAtLogin();
     syncTray();
     createWindow(!hidden);
     if (hidden && isMac && app.dock) app.dock.hide();
+    if (SELFTEST) { runSelftest(); return; }
     updater.init({ send, showWindow, settings: () => store.data.settings, beforeInstall: () => { quitting = true; try { store.flush(); } catch {} } });
     // mantém a pasta principal e as pastas do usuário sincronizadas em segundo plano
     setTimeout(async () => {
@@ -732,6 +776,20 @@ if (!app.requestSingleInstanceLock()) {
     }, 400);
     app.on('activate', () => showWindow());
   });
+}
+
+function runSelftest() {
+  const fail = (why) => { console.error(`GESFONT selftest: FALHOU (${why})`); app.exit(1); };
+  const timer = setTimeout(() => fail('tempo esgotado'), 45000);
+  win.webContents.on('render-process-gone', (_e, d) => fail(`renderer ${d.reason}`));
+  win.webContents.once('did-finish-load', () => setTimeout(async () => {
+    try {
+      const r = await win.webContents.executeJavaScript(`({ brand: !!document.querySelector('.brand'), nav: document.querySelectorAll('.nav-item').length, view: !!document.querySelector('.view-title, .view-head') })`);
+      clearTimeout(timer);
+      if (r.brand && r.nav >= 5 && r.view) { console.log(`GESFONT selftest: OK ${app.getVersion()} (${r.nav} itens no menu)`); app.exit(0); }
+      else fail(JSON.stringify(r));
+    } catch (e) { fail(e.message); }
+  }, 3000));
 }
 
 app.on('before-quit', async (e) => {

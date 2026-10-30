@@ -1,6 +1,6 @@
 {
   "name": "gesfont",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "GESFONT, gestão de fontes para Mac",
   "main": "main/main.js",
   "scripts": {
@@ -14,12 +14,12 @@
   "author": "Thiago Mantovani",
   "license": "UNLICENSED",
   "dependencies": {
-    "electron-updater": "^6.3.9",
+    "electron-updater": "6.8.11",
     "fontkit": "2.0.4"
   },
   "devDependencies": {
-    "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0"
   },
   "productName": "GESFONT",
   "build": {
@@ -57,10 +57,30 @@
       "darkModeSupport": true,
       "extendInfo": {
         "LSUIElement": false
-      }
+      },
+      "minimumSystemVersion": "12.0"
     },
     "dmg": {
-      "title": "GESFONT"
+      "title": "GESFONT",
+      "background": "build/background.png",
+      "iconSize": 96,
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 140,
+          "y": 178,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 178,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "win": {
       "target": "nsis",
@@ -79,7 +99,16 @@
         "releaseType": "release"
       }
     ],
-    "afterPack": "build/adhoc-sign.js"
+    "afterPack": "build/adhoc-sign.js",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "resetAdHocDarwinSignature": true
+    }
   },
   "repository": {
     "type": "git",
