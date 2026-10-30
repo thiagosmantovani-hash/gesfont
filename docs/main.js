@@ -2,7 +2,7 @@
 // Os links apontam para a última Release do GitHub. Se a API responder, cada botão
 // passa a baixar o .dmg certo (chip Apple ou Intel) direto, sem passar pela página da Release.
 
-const REPO = 'thiagosmantovani-hash/gesfont-releases';
+const REPO = 'thiagosmantovani-hash/gesfont';
 const RELEASES = `https://github.com/${REPO}/releases`;
 const LATEST = `${RELEASES}/latest`;
 const API = `https://api.github.com/repos/${REPO}/releases/latest`;

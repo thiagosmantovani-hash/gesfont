@@ -1,4 +1,4 @@
-// Atualizações automáticas a partir das Releases do GitHub (thiagosmantovani-hash/gesfont-releases).
+// Atualizações automáticas a partir das Releases do GitHub (thiagosmantovani-hash/gesfont).
 //
 // Dois modos:
 // - "squirrel": o electron-updater padrão (o equivalente ao Sparkle no Electron). Usado no Windows,
@@ -15,7 +15,7 @@ const os = require('os');
 const path = require('path');
 
 const OWNER = 'thiagosmantovani-hash';
-const REPO = 'gesfont-releases';
+const REPO = 'gesfont';
 const RELEASES_URL = `https://github.com/${OWNER}/${REPO}/releases/latest`;
 const SIX_HOURS = 6 * 3600 * 1000;
 

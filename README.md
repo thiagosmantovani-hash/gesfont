@@ -2,11 +2,11 @@
 
 Gestão de fontes para Mac (também roda em Windows e Linux). Organiza a biblioteca por cliente, ativa e desativa fontes sem instalar nada de forma definitiva, encontra e resolve duplicadas, navega pelo Google Fonts, mostra glifos e recursos OpenType, compara fontes e testa combinações de título e texto.
 
-**Site para baixar:** https://thiagosmantovani-hash.github.io/gesfont-releases/
+**Site para baixar:** https://thiagosmantovani-hash.github.io/gesfont/
 
 ## Instalar
 
-1. Abra a [última versão](https://github.com/thiagosmantovani-hash/gesfont-releases/releases/latest) e baixe o `.dmg`:
+1. Abra a [última versão](https://github.com/thiagosmantovani-hash/gesfont/releases/latest) e baixe o `.dmg`:
    - `GESFONT-x.y.z-arm64.dmg` para Macs com chip Apple (M1 em diante);
    - `GESFONT-x.y.z.dmg` para Macs Intel.
    Precisa do macOS 12 (Monterey) ou mais novo.
@@ -72,7 +72,7 @@ No Windows a cópia vai para a pasta de fontes do usuário e é registrada no re
 
 ## Atualizações automáticas
 
-A atualização automática vem ligada. O GESFONT procura versão nova nas [Releases deste repositório](https://github.com/thiagosmantovani-hash/gesfont-releases/releases) ao abrir e a cada seis horas. Quando encontra, abre um aviso no centro do app, com as novidades, que bloqueia o uso até você escolher: **Atualizar agora** ou **Agora não** (o X e a tecla Esc também adiam). Nada é baixado sem você aceitar. Se aceitar, o aviso mostra o progresso: o app baixa, confere a integridade do arquivo (SHA-512), fecha, troca o GESFONT.app em Aplicativos pela versão nova e abre de novo. Dá para continuar usando enquanto baixa. Se adiar, fica um lembrete no rodapé da barra lateral com o botão **Atualizar**, que reabre o aviso, e o app pergunta de novo na próxima vez que abrir. Com a janela fechada (app na barra de menus), o aviso chega como notificação do macOS. Para desligar a procura automática, vá em Ajustes > Atualizações. **Verificar atualizações…**, no menu GESFONT, procura na hora mesmo com ela desligada.
+A atualização automática vem ligada. O GESFONT procura versão nova nas [Releases deste repositório](https://github.com/thiagosmantovani-hash/gesfont/releases) ao abrir e a cada seis horas. Quando encontra, abre um aviso no centro do app, com as novidades, que bloqueia o uso até você escolher: **Atualizar agora** ou **Agora não** (o X e a tecla Esc também adiam). Nada é baixado sem você aceitar. Se aceitar, o aviso mostra o progresso: o app baixa, confere a integridade do arquivo (SHA-512), fecha, troca o GESFONT.app em Aplicativos pela versão nova e abre de novo. Dá para continuar usando enquanto baixa. Se adiar, fica um lembrete no rodapé da barra lateral com o botão **Atualizar**, que reabre o aviso, e o app pergunta de novo na próxima vez que abrir. Com a janela fechada (app na barra de menus), o aviso chega como notificação do macOS. Para desligar a procura automática, vá em Ajustes > Atualizações. **Verificar atualizações…**, no menu GESFONT, procura na hora mesmo com ela desligada.
 
 O motor de atualização é o `electron-updater`, o equivalente ao Sparkle para apps Electron. O Sparkle em si é para apps nativos do macOS e não roda dentro do Electron. Como o app não tem certificado Developer ID, o macOS não deixa o atualizador padrão trocar o app, por isso o GESFONT usa um instalador próprio (`main/updater.js`) que faz a troca depois de conferir o arquivo. Se algo impedir a troca (app fora de Aplicativos, sem permissão de escrita), o aviso vira **Baixar** e abre a página da versão.
 
